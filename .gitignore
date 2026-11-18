@@ -1,0 +1,20 @@
+# Local credentials
+/secrets/*
+.env
+.env.*
+*.env
+!.env.example
+
+# Encrypted dotenvx inputs required by home.nix
+!/secrets/*.env
+
+# Nix build outputs and local development state
+/result
+/result-*
+.direnv/
+
+# Editor and OS artifacts
+*.swp
+*.swo
+*~
+.DS_Store
