@@ -5,8 +5,11 @@
 *.env
 !.env.example
 
-# Encrypted dotenvx inputs required by home.nix
-!/secrets/*.env
+# Only the dotenvx inputs referenced by modules/dotenvx.nix belong in Git.
+!/secrets/.env.cachix
+!/secrets/.env.global
+!/secrets/claude.env
+!/secrets/pi.env
 
 # Nix build outputs and local development state
 /result
