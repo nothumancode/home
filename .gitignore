@@ -1,16 +1,3 @@
-# Local credentials
-/secrets/*
-.env
-.env.*
-*.env
-!.env.example
-
-# Only the dotenvx inputs referenced by modules/dotenvx.nix belong in Git.
-!/secrets/.env.cachix
-!/secrets/.env.global
-!/secrets/claude.env
-!/secrets/pi.env
-
 # Nix build outputs and local development state
 /result
 /result-*
