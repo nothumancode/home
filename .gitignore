@@ -8,3 +8,7 @@
 *.swo
 *~
 .DS_Store
+
+# Private keys never belong in this repository
+.env.keys
+keys.txt
