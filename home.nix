@@ -3,7 +3,6 @@
 {
   imports = [
     ./modules/bash.nix
-    ./modules/dotenvx.nix
     ./modules/git.nix
     ./modules/neovim.nix
     ./modules/herdr.nix
@@ -17,7 +16,9 @@
   home.stateVersion = "26.05";
 
   home.packages = [
+    pkgs.age
     pkgs.cachix
+    pkgs.doppler
     pkgs.git
     pkgs.gh
     pkgs.nixfmt
@@ -27,6 +28,7 @@
     pkgs.uv
     pkgs.jq
     pkgs.ripgrep
+    pkgs.secretspec
     pkgs.fd
     pkgs.shfmt
   ];

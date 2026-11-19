@@ -1,4 +1,8 @@
-{ ... }:
+{ pkgs, ... }:
+
+let
+  secretspecFile = ../secretspec.toml;
+in
 {
   programs.bash = {
     enable = true;
@@ -8,6 +12,10 @@
       	if [[ -f "$HOME/.bashrc" ]]; then
       	  source "$HOME/.bashrc"
       	fi
+    '';
+
+    initExtra = ''
+      eval "$(${pkgs.secretspec}/bin/secretspec export -f ${secretspecFile} --format shell)"
     '';
 
     shellAliases = {
