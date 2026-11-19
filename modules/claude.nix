@@ -15,7 +15,11 @@
           effortLevel = "high";
         };
       };
-      permissions = { defaultMode = "auto"; };
+      permissions = {
+        defaultMode = "auto";
+        # The key that decrypts every secret in the Home Manager repository.
+        deny = [ "Read(~/.config/sops/age/**)" ];
+      };
       statusLine = {
         command = "input=$(cat); echo \"[$(echo \"$input\" | jq -r '.model.display_name')] 📁 $(basename \"$(echo \"$input\" | jq -r '.workspace.current_dir')\")\"";
         padding = 0;

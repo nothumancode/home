@@ -1,8 +1,7 @@
 {
-  description = "Home Manager configuration of rodat";
+  description = "Home Manager configuration for Linux, WSL and macOS";
 
   inputs = {
-    # Specify the source of Home Manager and Nixpkgs.
     nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.zst";
     home-manager = {
       url = "github:nix-community/home-manager/master";
@@ -11,29 +10,72 @@
   };
 
   outputs =
-    inputs@{
-      nixpkgs,
-      home-manager,
-      ...
-    }:
+    { nixpkgs, home-manager, ... }:
     let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        config = {
-          allowUnfree = true;
+      inherit (nixpkgs) lib;
+
+      # Account names this configuration is used under. Each name works on
+      # every system below; the home directory follows the platform.
+      users = [
+        "rodat"
+        "tomas"
+      ];
+
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+
+      forAllSystems =
+        f:
+        lib.genAttrs systems (
+          system:
+          f (
+            import nixpkgs {
+              inherit system;
+              config.allowUnfree = true;
+            }
+          )
+        );
+
+      mkHome =
+        pkgs: username:
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [
+            ./home.nix
+            {
+              home = {
+                inherit username;
+                homeDirectory = (if pkgs.stdenv.hostPlatform.isDarwin then "/Users/" else "/home/") + username;
+              };
+            }
+          ];
         };
-      };
     in
     {
-      homeConfigurations."rodat" = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
+      # Nix resolves `.#homeConfigurations.<user>` through legacyPackages.<current
+      # system>, so `home-manager switch --flake .` selects the right platform
+      # without a table of hosts.
+      legacyPackages = forAllSystems (pkgs: {
+        homeConfigurations = lib.genAttrs users (mkHome pkgs);
+      });
 
-        modules = [ ./home.nix ];
+      packages = forAllSystems (pkgs: {
+        # Both are used by bootstrap.sh before the first activation.
+        home-manager = home-manager.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        secrets = pkgs.callPackage ./scripts/secrets.nix { };
+      });
 
-        extraSpecialArgs = {
-          inherit inputs;
-        };
-      };
+      checks = forAllSystems (pkgs: {
+        home = (mkHome pkgs (lib.head users)).activationPackage;
+        bootstrap = pkgs.runCommand "check-bootstrap" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
+          shellcheck ${./bootstrap.sh}
+          touch $out
+        '';
+      });
+
+      formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
     };
 }

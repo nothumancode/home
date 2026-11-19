@@ -1,0 +1,26 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+      - name: Check formatting
+        run: nix fmt -- --ci
+      - name: Build the Linux configuration and lint the scripts
+        run: nix flake check
+      - name: Evaluate the macOS and ARM Linux configurations
+        run: |
+          for system in aarch64-darwin aarch64-linux; do
+            nix eval --raw ".#checks.$system.home.drvPath"
+            echo
+          done
