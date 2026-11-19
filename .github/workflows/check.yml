@@ -14,9 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            include ${{ github.workspace }}/config/nix/cachix.conf
       - name: Check formatting
         run: nix fmt -- --ci
-      - name: Build the Linux configuration and lint the scripts
+      - name: Build the Linux configuration and check SecretSpec shell loading
         run: nix flake check
       - name: Evaluate the macOS and ARM Linux configurations
         run: |

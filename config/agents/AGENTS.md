@@ -18,10 +18,9 @@ same configuration runs on Linux, WSL and macOS.
 
 # Secrets
 
-API tokens are inherited from the shell. With sops, `secrets status` lists
-the names without values. Otherwise the names are declared in `secretspec.toml`.
+Interactive shells load the variables declared in the Home Manager repository's
+`secretspec.toml`. Programs started from the shell inherit them.
 
 - Do not print a token, write it to a file, or put it in a commit, a log or
   a command line that is echoed back.
-- Do not read `~/.config/sops/age/keys.txt` and do not decrypt
-  `secrets/identity.age`.
+- Do not read age identities, decrypt `secrets.age`, or dump the environment.

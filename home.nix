@@ -4,7 +4,8 @@
   imports = [
     ./modules/shell.nix
     ./modules/packages.nix
-    ./modules/secrets.nix
+    ./modules/cachix.nix
+    ./modules/secretspec.nix
     ./modules/git.nix
     ./modules/neovim.nix
     ./modules/herdr.nix

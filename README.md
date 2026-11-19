@@ -5,23 +5,21 @@ command-line tools, coding agents (Claude Code, Pi) and their secrets.
 
 ## Set up a new machine
 
+Install Nix with `nix-command` and `flakes` enabled, then open a new terminal.
+The [standalone Home Manager](https://nix-community.github.io/home-manager/nix-flakes/standalone.html)
+configuration already exists in this repository; no `init` or setup script is needed.
+
 ```sh
-# 1. Install Nix, then open a new terminal.
-curl --proto '=https' --tlsv1.2 -sSfL https://artifacts.nixos.org/nix-installer | sh -s -- install
+# Clone this repository (sign in with gh first if needed).
+nix shell nixpkgs#gh nixpkgs#git -c gh repo clone thehumanworks/home ~/.config/home-manager
+cd ~/.config/home-manager
 
-# 2. Sign in to GitHub and clone this repository.
-nix shell nixpkgs#gh nixpkgs#git -c sh -c \
-  'gh auth login && gh repo clone thehumanworks/home ~/.config/home-manager'
-
-# 3. Activate. If the repository has a sops key, unlock it when prompted.
-~/.config/home-manager/bootstrap.sh
+# First activation uses the Home Manager CLI pinned in flake.lock.
+nix run .#home-manager -- switch -b backup --flake .
 ```
 
-Open a new terminal when the script finishes. `bootstrap.sh` is safe to run
-again, and it installs Nix itself when step 1 was skipped.
-
-The account name must be in `users` in [`flake.nix`](flake.nix). The same name
-works on every platform; the script tells you when a name is missing.
+The account name must be in `users` in [`flake.nix`](flake.nix). Open a new
+terminal after activation; use `hms` for subsequent switches.
 
 ## Daily use
 
@@ -32,73 +30,71 @@ works on every platform; the script tells you when a name is missing.
 | Check a change before applying it | `nix flake check` |
 | Format Nix files | `nix fmt` |
 
-## Secrets
+## Binary caches
 
-When `secrets/env.yaml` is absent, Bash and Zsh can load the variables declared
-in [`secretspec.toml`](secretspec.toml). Shell startup tries SecretSpec if you
-have a SecretSpec configuration, `SECRETSPEC_PROVIDER`, or `DOPPLER_TOKEN`.
-It uses the manifest in the checkout so relative providers can find
-`secrets.age`. Missing credentials leave the shell usable without the secrets;
-no token is needed to build or activate Home Manager.
+After activation, local builds can download signed paths from
+[`thehuman`](https://thehuman.cachix.org) and
+[`nixpkgs-python`](https://nixpkgs-python.cachix.org) in addition to the
+standard Nix caches. Both are public: no token is needed and builds are not
+uploaded. The URLs and public signing keys are in
+[`config/nix/cachix.conf`](config/nix/cachix.conf). CI uses the same file.
+To use the caches on the very first switch too, prefix the `nix run` command
+above with `NIX_CONFIG="$(cat config/nix/cachix.conf)"`.
 
-To diagnose a provider without printing secret values, run
-`(cd ~/.config/home-manager && secretspec export >/dev/null)`.
+Home Manager adds `!include hm-cachix.conf` to your user `nix.conf`, leaving
+private settings in place. Check the result with `nix config show substituters`.
+If you have old `substituters =` or `trusted-public-keys =` lines there, remove
+redundant entries or change those settings to `extra-…` to keep system defaults.
 
-To use [sops](https://getsops.io) instead, run `secrets init`, then
-`secrets set NAME` for each variable you need. Once the configuration includes
-`secrets/env.yaml`, shells load only that file and do not contact Doppler.
-The sops environment file is encrypted with one [age](https://age-encryption.org) key.
+Home Manager does not edit `/etc/nix`. If a multi-user Nix daemon reports that
+it is ignoring an untrusted cache, have the administrator add the same public
+cache settings to the daemon configuration and reload the daemon. With
+Determinate Nix, `/etc/nix/nix.custom.conf` is the local override included by
+the generated `/etc/nix/nix.conf`.
 
-| File | Content |
-| --- | --- |
-| `secrets/env.yaml` | The secrets. Names are readable, values are encrypted. |
-| `secrets/identity.age` | The age key, encrypted with your passphrase. |
-| `.sops.yaml` | The public half of the key. |
-| `~/.config/sops/age/keys.txt` | The usable key on each machine. Not in Git. |
+## Shell secrets
 
-The passphrase is the only thing you carry between machines. Keep it in a
-password manager. `bootstrap.sh` (or `secrets unlock`) uses it once per machine
-to write the key file.
+[`secretspec.toml`](secretspec.toml) declares which variables belong in every
+interactive Bash and Zsh shell. Home Manager installs the shell hook, **not the
+values**. At shell startup it runs [`secretspec export`](https://secretspec.dev/reference/cli/#export)
+against the checkout's manifest and loads the `default` profile only on success.
+This works from any directory. Programs started from that shell (including
+coding agents) inherit the variables; unrelated services, GUI apps and other
+users do not. Use a separate project manifest and `secretspec run -- COMMAND`
+for secrets that should not be global.
 
-Each entry of `secrets/env.yaml` becomes an environment variable in every
-interactive Bash and Zsh session. Programs started from that shell, coding
-agents included, inherit it. Put a token there only if every such program may
-read it.
+The manifest reads from [Doppler](https://secretspec.dev/providers/doppler/)
+using the `doppler` alias. Its token comes from a SecretSpec credential source
+named **`bootstrap`**. That's a provider alias, not a shell script. On this
+setup it uses the [age provider](https://secretspec.dev/providers/age/) and
+the encrypted `secrets.age` next to the manifest.
 
-| Task | Command |
-| --- | --- |
-| List the variable names | `secrets status` |
-| Add or change a variable | `secrets set NAME` |
-| Remove a variable | `secrets unset NAME` |
-| Edit several at once | `sops secrets/env.yaml` (keep the file flat: `NAME: value`) |
-| Install the key on this machine | `secrets unlock` |
-| Replace the key and passphrase | `secrets rotate` |
-
-After a change, commit, run `hms` and open a new terminal. A variable that is
-already set in a shell keeps its value.
-
-If a machine or the passphrase is lost, run `secrets rotate` and also replace
-each token at its provider. Rotation cannot protect values that are already in
-the Git history.
-
-### Secrets for one project
-
-Give the project its own sops file and load it with direnv. The variables then
-exist only inside that directory.
+On a new machine, install the **matching private age identity** outside the
+checkout (mode 600). Register the alias in your user SecretSpec configuration
+if it isn't there already, substituting the actual identity file path:
 
 ```sh
-age-keygen -y ~/.config/sops/age/keys.txt   # prints your public key
-sops encrypt --age <public key> -i secrets.yaml
-echo 'use sops' >.envrc && direnv allow
+secretspec config global provider add bootstrap 'age://secrets.age?identity=/absolute/path/to/your/identity.txt'
 ```
 
-For one command without direnv: `sops exec-env secrets.yaml '<command>'`.
+An existing encrypted credential needs no new login. Only when provisioning
+or replacing the Doppler token, run `secretspec config provider login doppler`
+**from the checkout**; it prompts privately and writes to the credential store.
+Do not put tokens or private keys in the manifest, Nix settings or Git.
+
+Open a new terminal after changing credentials or declarations. If the provider
+is unavailable the shell still opens and inherits its previous environment. To
+diagnose a failure, or check inheritance, without printing a value:
+
+```sh
+(cd ~/.config/home-manager && secretspec export --profile default >/dev/null)
+printenv EXA_API_KEY >/dev/null && echo 'EXA_API_KEY is exported'
+```
 
 ## Platform notes
 
-- **WSL**: Nix needs systemd. If `bootstrap.sh` reports that systemd is not
-  running, add `[boot]` and `systemd=true` to `/etc/wsl.conf` and run
-  `wsl.exe --shutdown`. Nothing else in this configuration needs systemd.
+- **WSL**: for a multi-user Nix installation, enable systemd in `/etc/wsl.conf`
+  (`[boot]` and `systemd=true`) and run `wsl.exe --shutdown` from Windows.
 - **macOS**: Zsh is the login shell and gets the same aliases, prompt and
   secrets as Bash. `sed`, `grep`, `find`, `awk`, `tar` and the coreutils are the
   GNU versions, so commands behave as they do on Linux. The system versions
@@ -113,11 +109,10 @@ For one command without direnv: `sops exec-env secrets.yaml '<command>'`.
 | `home.nix` | Module list and settings shared by all platforms |
 | `modules/shell.nix` | Bash, Zsh, prompt, fzf, zoxide, direnv |
 | `modules/packages.nix` | Command-line tools |
-| `modules/secrets.nix` | Loads sops or SecretSpec variables into the shell; `use sops` for direnv |
+| `modules/secretspec.nix` | Loads the home manifest into interactive Bash and Zsh at runtime |
 | `modules/git.nix` | Git settings, GitHub sign-in through `gh`, delta |
 | `modules/neovim.nix`, `config/nvim` | Editor, language servers, formatters |
 | `modules/claude.nix`, `modules/pi.nix`, `modules/mcp.nix` | Coding agents and their MCP servers |
 | `modules/agents.nix`, `config/agents` | Context given to every coding agent |
 | `modules/herdr.nix` | Terminal workspace manager |
-| `scripts/secrets.sh` | The `secrets` command |
 | `themes/` | One color palette for Neovim, Pi, herdr and the prompt |

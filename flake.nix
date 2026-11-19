@@ -7,10 +7,19 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    kbtd = {
+      url = "github:thehumanworks/kbtd";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    { nixpkgs, home-manager, ... }:
+    inputs@{
+      nixpkgs,
+      home-manager,
+      kbtd,
+      ...
+    }:
     let
       inherit (nixpkgs) lib;
 
@@ -43,6 +52,7 @@
         pkgs: username:
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
+          extraSpecialArgs = { inherit (inputs) kbtd; };
           modules = [
             ./home.nix
             {
@@ -63,17 +73,14 @@
       });
 
       packages = forAllSystems (pkgs: {
-        # Both are used by bootstrap.sh before the first activation.
+        # Use the pinned CLI for the first switch, before it is on PATH.
         home-manager = home-manager.packages.${pkgs.stdenv.hostPlatform.system}.default;
-        secrets = pkgs.callPackage ./scripts/secrets.nix { };
+        kbtd = kbtd.packages.${pkgs.stdenv.hostPlatform.system}.default;
       });
 
       checks = forAllSystems (pkgs: {
         home = (mkHome pkgs (lib.head users)).activationPackage;
-        bootstrap = pkgs.runCommand "check-bootstrap" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-          shellcheck ${./bootstrap.sh}
-          touch $out
-        '';
+        secretspec-shell = import ./tests/secretspec-shell.nix { inherit pkgs; };
       });
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);

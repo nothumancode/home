@@ -104,7 +104,7 @@ in
     config.theme = "ansi";
   };
 
-  # A project's `.envrc` can use `use flake` (cached by nix-direnv) and `use sops`.
+  # A project's .envrc can use `use flake` (cached by nix-direnv).
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;

@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  kbtd,
+  ...
+}:
 
 {
   # Command-line tools that people and coding agents both rely on. Editor
@@ -40,6 +45,13 @@
       nodejs_24
       python313
       uv
+
+      # Markdown Kanban board
+      kbtd.packages.${pkgs.stdenv.hostPlatform.system}.default
+
+      # Secret management (the pinned SecretSpec CLI is on the session PATH)
+      age
+      doppler
 
       # System
       btop

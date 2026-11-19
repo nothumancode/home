@@ -21,6 +21,26 @@
         "type": "github"
       }
     },
+    "kbtd": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795107712,
+        "narHash": "sha256-0er+7MOGx/3whpbepb/0bpsSApr0kIrfDIHJpdeuCto=",
+        "owner": "thehumanworks",
+        "repo": "kbtd",
+        "rev": "0924d55e29e52b4db7983ab5ec84816043e57943",
+        "type": "github"
+      },
+      "original": {
+        "owner": "thehumanworks",
+        "repo": "kbtd",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1794840529,
@@ -37,6 +57,7 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
+        "kbtd": "kbtd",
         "nixpkgs": "nixpkgs"
       }
     }

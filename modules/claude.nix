@@ -17,8 +17,11 @@
       };
       permissions = {
         defaultMode = "auto";
-        # The key that decrypts every secret in the Home Manager repository.
-        deny = [ "Read(~/.config/sops/age/**)" ];
+        # Inherit API tokens from the shell, not the identities that unlock them.
+        deny = [
+          "Read(~/.config/age/**)"
+          "Read(~/.config/sops/age/**)"
+        ];
       };
       statusLine = {
         command = "input=$(cat); echo \"[$(echo \"$input\" | jq -r '.model.display_name')] 📁 $(basename \"$(echo \"$input\" | jq -r '.workspace.current_dir')\")\"";
