@@ -35,6 +35,16 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- `sops`, `git commit` and similar tools hand over temporary files. Keep their text out of undo and swap files.
+vim.api.nvim_create_autocmd({ "BufNewFile", "BufReadPre" }, {
+  group = group,
+  pattern = { "/tmp/*", "/private/tmp/*", "/var/folders/*", "/private/var/folders/*", "/dev/shm/*", "/run/user/*" },
+  callback = function()
+    vim.opt_local.undofile = false
+    vim.opt_local.swapfile = false
+  end,
+})
+
 require("mini.icons").setup({ style = "ascii" })
 require("mini.statusline").setup({ use_icons = false })
 require("mini.files").setup()

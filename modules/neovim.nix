@@ -35,27 +35,35 @@ in
     ];
 
     # The wrapper supplies tools without exposing a second global toolchain.
-    extraPackages = with pkgs; [
-      nixd
-      lua-language-server
-      bash-language-server
-      shellcheck
-      ty
-      ruff
-      typescript # TypeScript 7 includes the native tsc --lsp server.
-      vscode-langservers-extracted
-      yaml-language-server
-      gopls
-      go # gopls needs the go command; also provides gofmt.
+    extraPackages =
+      with pkgs;
+      [
+        nixd
+        lua-language-server
+        bash-language-server
+        shellcheck
+        ty
+        ruff
+        typescript # TypeScript 7 includes the native tsc --lsp server.
+        vscode-langservers-extracted
+        yaml-language-server
+        gopls
+        go # gopls needs the go command; also provides gofmt.
 
-      nixfmt
-      prettier
-      shfmt
-      stylua
-      ripgrep
-      fd
-      git
-    ];
+        nixfmt
+        prettier
+        shfmt
+        stylua
+        ripgrep
+        fd
+        git
+      ]
+      # Clipboard access for the "+ register. macOS has pbcopy; WSL uses the
+      # Wayland socket that WSLg provides.
+      ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+        wl-clipboard
+        xclip
+      ];
 
     initLua = builtins.readFile ../config/nvim/init.lua;
   };

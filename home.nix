@@ -1,38 +1,28 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   imports = [
-    ./modules/bash.nix
+    ./modules/shell.nix
+    ./modules/packages.nix
+    ./modules/secrets.nix
     ./modules/git.nix
     ./modules/neovim.nix
     ./modules/herdr.nix
     ./modules/mcp.nix
+    ./modules/agents.nix
     ./modules/pi.nix
     ./modules/claude.nix
   ];
 
-  home.username = "rodat";
-  home.homeDirectory = "/home/rodat";
+  # home.username and home.homeDirectory come from flake.nix.
   home.stateVersion = "26.05";
 
-  home.packages = [
-    pkgs.age
-    pkgs.cachix
-    pkgs.doppler
-    pkgs.git
-    pkgs.gh
-    pkgs.nixfmt
-    pkgs.nixfmt-tree
-    pkgs.nodejs_24
-    pkgs.python313
-    pkgs.uv
-    pkgs.jq
-    pkgs.ripgrep
-    pkgs.secretspec
-    pkgs.fd
-    pkgs.shfmt
-  ];
+  # Use ~/.config, ~/.local/share and ~/.cache on every platform, macOS included.
+  xdg.enable = true;
 
-  programs.direnv.enable = true;
+  # Ubuntu, Debian, WSL and other distributions that are not NixOS.
+  targets.genericLinux.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isLinux;
+  targets.genericLinux.gpu.enable = false; # This is a terminal environment.
+
   programs.home-manager.enable = true;
 }
