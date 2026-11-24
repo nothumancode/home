@@ -17,7 +17,7 @@ Personal Nix flake managing Home Manager configurations across workstations and 
 | `hm-check` | Runs working-tree linters (`nixfmt --check`, `statix`, `deadnix`, `stylua --check`, `actionlint`) followed by `nix flake check` (style check, `remote-switch` + `shellcheck`, and one `home-<user>` activation package per entry in `users`). Passes extra flags (e.g. `-L`) to `nix flake check`. |
 | `hm-check --lint` | Runs only the fast working-tree linters without invoking `nix flake check`. |
 | `hm-switch` | With a local `~/.config/home-manager` checkout: `nh home switch -b backup` on it (live build tree + built-in package diff). Without one: exports `GITHUB_TOKEN`/`GH_TOKEN`/`gh auth token` as a Nix access token and runs `nix run --refresh github:thehumanworks/home`. Supports `--push` (push the new generation to `thehuman` Cachix; skipped on dry runs) and forwards `nh` flags like `-n` (dry run), `-a` (ask), `-u`/`-U <input>` (update lockfile, checkout only). |
-| `nix run --refresh github:thehumanworks/home` | Remote bootstrap/update without a checkout: switches the current `$USER` to the fetched flake revision via `nh home switch` (flags after `--` go to `nh`, e.g. `-- -n` for a dry run). The repo is private, so on a machine without `hm-switch` prefix it with `NIX_CONFIG="access-tokens = github.com=$GITHUB_TOKEN"`. |
+| `nix run --refresh github:thehumanworks/home` | Remote bootstrap/update without a checkout: switches the current `$USER` to the fetched flake revision via `nh home switch` (flags after `--` go to `nh`, e.g. `-- -n` for a dry run). While the repo is private, prefix it with `NIX_CONFIG="access-tokens = github.com=$GITHUB_TOKEN"` on a machine without `hm-switch`; once it is public no token is needed. |
 | `home-manager switch --flake <ref>` / `nh home switch <ref>` | Also work bare, with no wrapper and no `--impure`: both select `homeConfigurations.$USER`. |
 | `nix fmt` | Standard flake formatter (`nixfmt-tree`, Nix files only). |
 | `nix flake check` | Runs all flake checks directly (useful before `hm-check` is activated). |
@@ -42,4 +42,5 @@ Personal Nix flake managing Home Manager configurations across workstations and 
   EOF
   sudo systemctl restart nix-daemon
   ```
+- **Agent hooks are not declared in Nix:** a list declared in `programs.claude-code.settings` (or `programs.codex.hooks`) replaces the one in the agent's mutable settings file on every switch, wiping hooks other tools added. So `modules/brain.nix` leaves `programs.brain.enable*Integration` off and runs `brain install --quiet --claude --codex --pi` at activation instead; it only touches brain's own entries and writes nothing when they are current. Do not add `--service` (the watcher is the module's systemd unit; a second, hand-installed unit makes activation fail).
 - **`nh` and store paths:** `hm-remote-switch` passes `path:${self}`; a bare `/nix/store/...` argument makes `nh` treat it as a pre-built result instead of a flake.

@@ -24,11 +24,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1795544357,
-        "narHash": "sha256-7bNM6ytSBnGultSFQtWwNUKamUSaKo8GC72QtCtG38I=",
+        "lastModified": 1795548858,
+        "narHash": "sha256-4uffnJXp6Y8lLNPVi5rmjeQ+M5f38HReAN3y1yiZ7UA=",
         "owner": "thehumanworks",
         "repo": "capnshell",
-        "rev": "5b8fd9c3a6fd96502fdd94a50c598aee7a71bc8b",
+        "rev": "82734089aa9b920e9ff6b5dfb99cc0099dfa63a9",
         "type": "github"
       },
       "original": {

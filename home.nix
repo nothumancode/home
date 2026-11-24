@@ -10,6 +10,7 @@
     inputs.twg.homeManagerModules.default
     inputs.brain.homeManagerModules.default
     ./modules/bash.nix
+    ./modules/brain.nix
     ./modules/claude-code.nix
     ./modules/codex.nix
     ./modules/dagu.nix

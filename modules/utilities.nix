@@ -1,5 +1,4 @@
 {
-  inputs,
   config,
   lib,
   pkgs,
@@ -32,7 +31,8 @@ let
         ${lib.getExe config.programs.nh.package} home switch -b backup ${lib.escapeShellArg localFlakeDir} "''${args[@]}"
       else
         # No checkout: run the flake's own switch app at the latest remote revision.
-        # The flake repo is private, so the fetch needs a GitHub token.
+        # A GitHub token is required while the flake repo is private, and avoids
+        # anonymous API rate limits once it is public.
         token="''${GITHUB_TOKEN:-''${GH_TOKEN:-$(gh auth token 2>/dev/null || true)}}"
         if [[ -n "$token" ]]; then
           export NIX_CONFIG="''${NIX_CONFIG:-}"$'\n'"extra-access-tokens = github.com=$token"
@@ -182,9 +182,6 @@ in
       hmCheck
       hmFmt
       hmSwitch
-
-      # Agent-specific tooling
-      inputs.brain.packages.${pkgs.stdenv.hostPlatform.system}.default
 
       # Language runtimes, package managers, and native build toolchain
       bun
