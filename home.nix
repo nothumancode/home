@@ -34,7 +34,9 @@
     pkgs.doppler
     pkgs.fnox
     pkgs.jq
+    pkgs.nodejs_24
     pkgs.ripgrep
+    pkgs.python313
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
