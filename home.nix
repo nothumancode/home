@@ -33,6 +33,8 @@
     pkgs.direnv
     pkgs.doppler
     pkgs.fnox
+    pkgs.jq
+    pkgs.ripgrep
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage

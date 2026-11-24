@@ -31,7 +31,7 @@
       };
     };
 
-    # Populated at activation time by modules/gh.nix from fnox so the
+    # Populated at activation time by modules/gh.nix so the
     # enterprise host and work identity stay out of the Nix store.
     includes = [
       { path = "${config.xdg.configHome}/git/enterprise.gitconfig"; }
