@@ -8,13 +8,23 @@
 let
   flakeRef = "${config.xdg.configHome}/home-manager#${config.home.username}";
 
-  rebuild = pkgs.writeShellApplication {
-    name = "rebuild";
+  hmSwitch = pkgs.writeShellApplication {
+    name = "hm-switch";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.nvd
     ];
     text = ''
+      push=false
+      args=()
+      for arg in "$@"; do
+        if [[ "$arg" == "--push" ]]; then
+          push=true
+        else
+          args+=("$arg")
+        fi
+      done
+
       profile="''${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager"
       old_gen=""
       if [[ -e "$profile" ]]; then
@@ -22,24 +32,20 @@ let
       fi
 
       ${lib.getExe config.programs.home-manager.package} switch \
-        -b backup --flake ${lib.escapeShellArg flakeRef} "$@"
+        -b backup --flake ${lib.escapeShellArg flakeRef} "''${args[@]}"
 
-      if [[ -n "$old_gen" && -e "$profile" ]]; then
+      new_gen=""
+      if [[ -e "$profile" ]]; then
         new_gen=$(readlink -f "$profile" || true)
-        if [[ -n "$new_gen" && "$old_gen" != "$new_gen" ]]; then
-          nvd diff "$old_gen" "$new_gen" || true
-        fi
       fi
-    '';
-  };
 
-  cache = pkgs.writeShellApplication {
-    name = "cache";
-    runtimeInputs = [
-      pkgs.coreutils
-    ];
-    text = ''
-      ${lib.getExe pkgs.cachix} watch-exec thehuman -- ${lib.getExe config.programs.home-manager.package} build --flake ${lib.escapeShellArg flakeRef}
+      if [[ -n "$old_gen" && -n "$new_gen" && "$old_gen" != "$new_gen" ]]; then
+        nvd diff "$old_gen" "$new_gen" || true
+      fi
+
+      if [[ "$push" == true && -n "$new_gen" ]]; then
+        ${lib.getExe pkgs.cachix} push thehuman "$new_gen"
+      fi
     '';
   };
 in
@@ -108,8 +114,7 @@ in
   home.packages =
     with pkgs;
     [
-      rebuild
-      cache
+      hmSwitch
 
       # Language runtimes, package managers, and native build toolchain
       bun
