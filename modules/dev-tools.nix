@@ -1,4 +1,5 @@
 {
+  inputs,
   config,
   lib,
   pkgs,
@@ -12,11 +13,15 @@ let
     {
       filetypes = [ "nix" ];
       packages = [
+        deadnix
         nixfmt
         statix
       ];
       formatter = "nixfmt";
-      linter = "statix";
+      linters = [
+        "statix"
+        "deadnix"
+      ];
     }
     {
       filetypes = [
@@ -28,13 +33,16 @@ let
         shellcheck
       ];
       formatter = "shfmt";
-      linter = "shellcheck";
+      linters = [ "shellcheck" ];
     }
     {
       filetypes = [ "python" ];
-      packages = [ ruff ];
+      packages = [
+        ruff
+        ty
+      ];
       formatter = "ruff_format";
-      linter = "ruff";
+      linters = [ "ruff" ];
     }
     {
       filetypes = [ "lua" ];
@@ -62,30 +70,78 @@ let
         yamllint
       ];
       formatter = "prettier";
-      linter = "yamllint";
+      linters = [ "yamllint" ];
+    }
+    {
+      filetypes = [ "toml" ];
+      packages = [ taplo ];
+      formatter = "taplo";
+    }
+    {
+      filetypes = [ "dockerfile" ];
+      packages = [ hadolint ];
+      linters = [ "hadolint" ];
     }
   ];
 
+  extraCliPackages = with pkgs; [
+    # Kanban `todomd` CLI
+    inputs.kbtd.packages.${pkgs.stdenv.hostPlatform.system}.default
+    # Scoped to .github/workflows/*.y*ml in Neovim; available globally for CLI/agent checks.
+    actionlint
+    # Provides the treefmt-wrapped project formatter; never run as a single-buffer formatter.
+    nixfmt-tree
+  ];
+
   packages = lib.unique (lib.concatMap (lang: lang.packages) languages);
-  byFiletype =
-    adapter:
-    lib.listToAttrs (
-      lib.concatMap (lang: map (ft: lib.nameValuePair ft [ lang.${adapter} ]) lang.filetypes) (
-        lib.filter (lang: builtins.hasAttr adapter lang) languages
-      )
-    );
+  editorPackages = lib.unique (packages ++ [ pkgs.actionlint ]);
+
+  formattersByFiletype = lib.listToAttrs (
+    lib.concatMap (lang: map (ft: lib.nameValuePair ft [ lang.formatter ]) lang.filetypes) (
+      lib.filter (lang: lang ? formatter) languages
+    )
+  );
+
+  lintersByFiletype = lib.listToAttrs (
+    lib.concatMap (lang: map (ft: lib.nameValuePair ft lang.linters) lang.filetypes) (
+      lib.filter (lang: lang ? linters) languages
+    )
+  );
 in
 {
-  # nixfmt-tree provides the treefmt command; never run it as a buffer formatter.
-  home.packages = packages ++ [ pkgs.nixfmt-tree ];
+  home.packages = lib.unique (packages ++ extraCliPackages);
 
-  programs.neovim.extraPackages = lib.mkIf config.programs.neovim.enable packages;
+  editorconfig = {
+    enable = true;
+    settings = {
+      "*" = {
+        charset = "utf-8";
+        end_of_line = "lf";
+        insert_final_newline = true;
+        trim_trailing_whitespace = true;
+        indent_style = "space";
+        indent_size = 2;
+      };
+      "*.{py,pyi,rs}" = {
+        indent_size = 4;
+      };
+      "{Makefile,*.mk,*.go,go.mod,go.sum}" = {
+        indent_style = "tab";
+        indent_size = 4;
+      };
+      "*.md" = {
+        trim_trailing_whitespace = false;
+      };
+    };
+  };
+
+  programs.neovim.extraPackages = lib.mkIf config.programs.neovim.enable editorPackages;
   xdg.configFile."nvim/lua/dev_tools.lua" = lib.mkIf config.programs.neovim.enable {
     text =
       "return "
       + lib.generators.toLua { } {
-        formatters = byFiletype "formatter";
-        linters = byFiletype "linter";
+        formatters = formattersByFiletype;
+        linters = lintersByFiletype;
       };
   };
 }

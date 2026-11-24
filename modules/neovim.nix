@@ -10,7 +10,7 @@
     withNodeJs = true;
     withPython3 = true;
 
-    # Scope editor tooling to Neovim rather than the user's global PATH.
+    # Scope editor tooling to Neovim rather than the user global PATH.
     extraPackages = with pkgs; [
       fd
       ripgrep
@@ -21,6 +21,7 @@
       lua-language-server
       nil
       pyright
+      taplo
       typescript
       typescript-language-server
       vscode-langservers-extracted
@@ -39,19 +40,36 @@
         p: with p; [
           bash
           css
+          diff
+          dockerfile
+          git_config
+          git_rebase
+          gitcommit
+          gitignore
           go
           gomod
           gosum
           html
           javascript
+          jsdoc
           json
           lua
+          luadoc
+          make
           markdown
           markdown_inline
           nix
           python
+          query
+          regex
+          rust
+          sql
+          toml
           tsx
           typescript
+          vim
+          vimdoc
+          xml
           yaml
         ]
       ))

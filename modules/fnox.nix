@@ -1,4 +1,3 @@
-{ ... }:
 {
   programs.fnox = {
     enable = true;
@@ -6,6 +5,7 @@
     enableZshIntegration = true;
     settings = {
       default_provider = "doppler";
+      if_missing = "warn";
       daemon.enabled = true;
       providers.doppler = {
         type = "doppler";

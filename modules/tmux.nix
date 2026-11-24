@@ -1,0 +1,37 @@
+{
+  programs.tmux = {
+    enable = true;
+    baseIndex = 1;
+    clock24 = true;
+    customPaneNavigationAndResize = true;
+    escapeTime = 0;
+    focusEvents = true;
+    historyLimit = 100000;
+    keyMode = "vi";
+    mouse = true;
+    terminal = "tmux-256color";
+
+    extraConfig = ''
+      # Truecolor and OSC 52 clipboard passthrough across SSH, WSL2, and cns sessions.
+      set -as terminal-features ",*:RGB"
+      set -s set-clipboard on
+
+      # Forward modified Enter/Ctrl shortcuts (CSI-u) for Pi, Claude Code, and Codex.
+      set -g extended-keys on
+      set -g extended-keys-format csi-u
+
+      set -g renumber-windows on
+      set -g status-position bottom
+      set -g status-style "bg=#171717,fg=#EDEDED"
+      set -g status-left "#[fg=#52A8FF,bold] #S #[default] "
+      set -g status-right "#[fg=#888888]%Y-%m-%d %H:%M "
+      setw -g window-status-current-format "#[fg=#FFFFFF,bg=#333333,bold] #I:#W "
+      setw -g window-status-format "#[fg=#888888] #I:#W "
+
+      # Open splits and windows in the active pane working directory.
+      bind | split-window -h -c "#{pane_current_path}"
+      bind - split-window -v -c "#{pane_current_path}"
+      bind c new-window -c "#{pane_current_path}"
+    '';
+  };
+}

@@ -13,6 +13,7 @@ let
     name = "setup-github-auth";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.git
       pkgs.jq
     ];
     text = ''
@@ -65,6 +66,8 @@ let
         return 0
       }
 
+      mkdir -p "$git_config_dir"
+
       # Personal github.com authentication via Doppler.
       sync_gh_token "github.com" "GITHUB_TOKEN" || true
 
@@ -87,8 +90,6 @@ let
       if sync_gh_token "$host" "GITHUB_ENTERPRISE_TOKEN"; then
         enterprise_token_changed=1
       fi
-
-      mkdir -p "$git_config_dir"
 
       if [[ "$enterprise_token_changed" -eq 1 || ! -s "$enterprise_identity_config" ]]; then
         if user_json=$(gh_clean api --hostname "$host" user 2>/dev/null); then
@@ -162,10 +163,15 @@ in
     };
 
     settings = {
+      editor = "nvim";
       git_protocol = "https";
       prompt = "enabled";
       aliases = {
         co = "pr checkout";
+        pc = "pr create";
+        prc = "pr checks";
+        pv = "pr view";
+        rv = "repo view";
       };
     };
   };
