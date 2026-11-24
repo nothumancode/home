@@ -10,15 +10,19 @@
         "openai/gpt-6.2-sol"
         "openai/gpt-6.2-astra"
         "openai/gpt-6.1-terra"
+        "vercel-ai-gateway/google/gemini-4-neon"
+        "vercel-ai-gateway/google/gemini-4-carbon"
+        "vercel-ai-gateway/google/gemini-4-hydrogen"
       ];
       modelThinkingLevels = {
         "openai/gpt-6.2-sol" = "max";
+        "vercel-ai-gateway/google/gemini-4-neon" = "high";
       };
       enableInstallTelemetry = false;
       quietStartup = true;
       collapseChangelog = true;
       showCacheMissNotices = true;
-      transport = "websocket-cached";
+      transport = "websocket";
       defaultProjectTrust = "always";
       codemode = {
         mode = "only";
@@ -27,6 +31,8 @@
       advisorModel = "openai/gpt-6.2-astra";
       packages = [
         "npm:pi-open-tui"
+        "npm:@nothumanwork/pi-create-document"
+        "npm:@nothumanwork/pi-worktree"
         "npm:@nothumanwork/pi-loggly"
         "npm:@nothumanwork/pi-fast"
         "npm:@nothumanwork/pi-advisor"
@@ -53,6 +59,9 @@
     providers.openai.modelOverrides = {
       "gpt-6.2-astra".contextWindow = 400000;
       "gpt-6.2-sol".contextWindow = 400000;
+    };
+    providers.vercel-ai-gateway.modelOverrides = {
+      "google/gemini-4-neon".contextWindow = 600000;
     };
   };
 
