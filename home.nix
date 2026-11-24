@@ -1,4 +1,5 @@
 {
+  cachixConfig,
   inputs,
   ...
 }:
@@ -10,12 +11,14 @@
     ./modules/bash.nix
     ./modules/claude-code.nix
     ./modules/codex.nix
+    ./modules/dagu.nix
     ./modules/dev-tools.nix
     ./modules/direnv.nix
     ./modules/fnox.nix
     ./modules/gh.nix
     ./modules/git.nix
     ./modules/neovim.nix
+    ./modules/nh.nix
     ./modules/pi-coding-agent.nix
     ./modules/tmux.nix
     ./modules/twg.nix
@@ -23,8 +26,6 @@
   ];
 
   home = {
-    username = "rodat";
-    homeDirectory = "/home/rodat";
     stateVersion = "26.05";
 
     sessionPath = [ "$HOME/.local/bin" ];
@@ -58,7 +59,7 @@
 
       # Matching extra-trusted-substituters and extra-trusted-public-keys live in /etc/nix/nix.custom.conf.
       "nix/nix.conf".text = ''
-        extra-substituters = https://thehuman.cachix.org https://nixpkgs-python.cachix.org
+        extra-substituters = ${builtins.concatStringsSep " " cachixConfig.substituters}
       '';
     };
   };

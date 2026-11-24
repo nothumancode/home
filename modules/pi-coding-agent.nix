@@ -8,6 +8,20 @@
 let
   jsonFormat = pkgs.formats.json { };
 
+  piWrapper = pkgs.writeShellApplication {
+    name = "pi";
+    runtimeInputs = [ ];
+    text = ''
+      DOPPLER_PROJECT="vault" DOPPLER_CONFIG="prd" \
+        ${lib.getExe pkgs.doppler} run \
+          --only-secrets LOGGLY_API_TOKEN \
+          --only-secrets LOGGLY_SUBDOMAIN \
+          --only-secrets EXA_API_KEY \
+          --only-secrets AI_GATEWAY_API_KEY \
+          -- \
+          ${lib.getExe pkgs.pi-coding-agent} "$@"
+    '';
+  };
   openTuiDefaults = jsonFormat.generate "pi-open-tui.json" {
     enabled = true;
     header = true;
@@ -55,6 +69,7 @@ in
   programs.pi-coding-agent = {
     enable = true;
     mutableSettings = true;
+    package = piWrapper;
 
     extraPackages = with pkgs; [
       ast-grep
