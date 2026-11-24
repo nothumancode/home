@@ -1,15 +1,34 @@
 {
   "nodes": {
-    "capnshell": {
+    "brain": {
       "inputs": {
+        "home-manager": "home-manager",
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1795462222,
-        "narHash": "sha256-aKJTW6XA9Hxk+UoCp9RVhvPJFbZJMq7uXJvE99Sjgmw=",
+        "lastModified": 1795546315,
+        "narHash": "sha256-vjBZOAq+Bf9Kcffizvk9suox39bKO5/WP6kDmCgSXY8=",
+        "owner": "thehumanworks",
+        "repo": "brain",
+        "rev": "e2cd20c80139376526ba5f1427bc065383a76da6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "thehumanworks",
+        "repo": "brain",
+        "type": "github"
+      }
+    },
+    "capnshell": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1795544357,
+        "narHash": "sha256-7bNM6ytSBnGultSFQtWwNUKamUSaKo8GC72QtCtG38I=",
         "owner": "thehumanworks",
         "repo": "capnshell",
-        "rev": "b8b2a21857307f97220b2ff5cc6372de7f64c0f6",
+        "rev": "5b8fd9c3a6fd96502fdd94a50c598aee7a71bc8b",
         "type": "github"
       },
       "original": {
@@ -19,6 +38,27 @@
       }
     },
     "home-manager": {
+      "inputs": {
+        "nixpkgs": [
+          "brain",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793193205,
+        "narHash": "sha256-X6xa6sGA7RnJQuZGbFMC+K+KToWAlBDCCjJXfTwEPsw=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "095fef2f265c3c0da4fe315efba8f8a04495ab34",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "home-manager_2": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
@@ -38,7 +78,7 @@
         "type": "github"
       }
     },
-    "home-manager_2": {
+    "home-manager_3": {
       "inputs": {
         "nixpkgs": [
           "twg",
@@ -62,7 +102,7 @@
     },
     "kbtd": {
       "inputs": {
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs_3"
       },
       "locked": {
         "lastModified": 1795141745,
@@ -80,17 +120,17 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1793225069,
-        "narHash": "sha256-sx1f99WGrDfJ83KKuQrqGPmot0rnDgmpLJDzpU2oHQQ=",
+        "lastModified": 1793110635,
+        "narHash": "sha256-dhoW6VgFWlaodSY5jrBn+CF2FLmaUvDVgM7+C7T2+NM=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "e62746b0b472753ef019baceab6f1e2e52014980",
+        "rev": "31ecbaca1bdefa45dffc409f0250bd8039ea0010",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
-        "rev": "e62746b0b472753ef019baceab6f1e2e52014980",
         "type": "github"
       }
     },
@@ -112,6 +152,22 @@
       }
     },
     "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1793225069,
+        "narHash": "sha256-sx1f99WGrDfJ83KKuQrqGPmot0rnDgmpLJDzpU2oHQQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e62746b0b472753ef019baceab6f1e2e52014980",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e62746b0b472753ef019baceab6f1e2e52014980",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
       "inputs": {
         "nixpkgs-src": "nixpkgs-src"
       },
@@ -130,7 +186,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_3": {
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1795371335,
         "narHash": "sha256-oa2P5WZer1A4wuhatl92JyHHEjrrOdIyuvTuI5LUi9Q=",
@@ -146,7 +202,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_4": {
+    "nixpkgs_5": {
       "locked": {
         "lastModified": 1793865203,
         "narHash": "sha256-/cpdPHaySDIyCgZI6EWngiM6jK3YLUNzv1b7lTzy6Bk=",
@@ -164,17 +220,18 @@
     },
     "root": {
       "inputs": {
+        "brain": "brain",
         "capnshell": "capnshell",
-        "home-manager": "home-manager",
+        "home-manager": "home-manager_2",
         "kbtd": "kbtd",
-        "nixpkgs": "nixpkgs_3",
+        "nixpkgs": "nixpkgs_4",
         "twg": "twg"
       }
     },
     "twg": {
       "inputs": {
-        "home-manager": "home-manager_2",
-        "nixpkgs": "nixpkgs_4"
+        "home-manager": "home-manager_3",
+        "nixpkgs": "nixpkgs_5"
       },
       "locked": {
         "lastModified": 1794163135,

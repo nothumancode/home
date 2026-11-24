@@ -8,6 +8,7 @@
   imports = [
     inputs.capnshell.homeModules.default
     inputs.twg.homeManagerModules.default
+    inputs.brain.homeManagerModules.default
     ./modules/bash.nix
     ./modules/claude-code.nix
     ./modules/codex.nix

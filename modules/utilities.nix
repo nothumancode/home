@@ -1,5 +1,5 @@
 {
-  cachixConfig,
+  inputs,
   config,
   lib,
   pkgs,
@@ -9,63 +9,40 @@
 
 let
   localFlakeDir = "${config.xdg.configHome}/home-manager";
-  localFlakeRef = "${localFlakeDir}#${config.home.username}";
-  remoteFlakeRef = "${remoteFlake}#${config.home.username}";
 
   hmSwitch = pkgs.writeShellApplication {
     name = "hm-switch";
-    runtimeInputs = [
-      pkgs.coreutils
-      pkgs.jq
-      pkgs.nvd
-    ];
+    runtimeInputs = [ pkgs.coreutils ];
     text = ''
       push=false
-      remote=false
+      dry_run=false
       args=()
       for arg in "$@"; do
         case "$arg" in
-          --push)
-            push=true
-            ;;
-          --remote)
-            remote=true
-            ;;
-          *)
+          --push) push=true ;;
+          -n | --dry)
+            dry_run=true
             args+=("$arg")
             ;;
+          *) args+=("$arg") ;;
         esac
       done
 
-      ${cachixConfig.nixOptsShellSnippet}
-
-      if [[ "$remote" == true || ! -f ${lib.escapeShellArg "${localFlakeDir}/flake.nix"} ]]; then
-        flake_ref=${lib.escapeShellArg remoteFlakeRef}
-        nix_opts+=(--refresh)
+      if [[ -f ${lib.escapeShellArg "${localFlakeDir}/flake.nix"} ]]; then
+        ${lib.getExe config.programs.nh.package} home switch -b backup ${lib.escapeShellArg localFlakeDir} "''${args[@]}"
       else
-        flake_ref=${lib.escapeShellArg localFlakeRef}
+        # No checkout: run the flake's own switch app at the latest remote revision.
+        # The flake repo is private, so the fetch needs a GitHub token.
+        token="''${GITHUB_TOKEN:-''${GH_TOKEN:-$(gh auth token 2>/dev/null || true)}}"
+        if [[ -n "$token" ]]; then
+          export NIX_CONFIG="''${NIX_CONFIG:-}"$'\n'"extra-access-tokens = github.com=$token"
+        fi
+        nix run --refresh ${lib.escapeShellArg remoteFlake} -- "''${args[@]}"
       fi
 
-      profile="''${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager"
-      old_gen=""
-      if [[ -e "$profile" ]]; then
-        old_gen=$(readlink -f "$profile" || true)
-      fi
-
-      ${lib.getExe config.programs.home-manager.package} switch \
-        -b backup --flake "$flake_ref" "''${nix_opts[@]}" "''${args[@]}"
-
-      new_gen=""
-      if [[ -e "$profile" ]]; then
-        new_gen=$(readlink -f "$profile" || true)
-      fi
-
-      if [[ -n "$old_gen" && -n "$new_gen" && "$old_gen" != "$new_gen" ]]; then
-        nvd diff "$old_gen" "$new_gen" || true
-      fi
-
-      if [[ "$push" == true && -n "$new_gen" ]]; then
-        ${lib.getExe pkgs.cachix} push thehuman "$new_gen"
+      if [[ "$push" == true && "$dry_run" == false ]]; then
+        profile="''${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager"
+        ${lib.getExe pkgs.cachix} push thehuman "$(readlink -f "$profile")"
       fi
     '';
   };
@@ -126,7 +103,7 @@ let
         stylua --no-editorconfig --check modules/neovim
       fi
       if [[ -d .github/workflows ]]; then
-        actionlint
+        find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -exec actionlint {} +
       fi
 
       if [[ "$lint_only" == true ]]; then
@@ -206,6 +183,9 @@ in
       hmFmt
       hmSwitch
 
+      # Agent-specific tooling
+      inputs.brain.packages.${pkgs.stdenv.hostPlatform.system}.default
+
       # Language runtimes, package managers, and native build toolchain
       bun
       gcc
@@ -220,6 +200,7 @@ in
       # Code intelligence, structured data, benchmarking, and task runners
       ast-grep
       hyperfine
+      hunk
       just
       lefthook
       poppler-utils

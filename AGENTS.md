@@ -4,7 +4,7 @@ Personal Nix flake managing Home Manager configurations across workstations and 
 
 ## Layout
 
-- `flake.nix` — Flake inputs, shared `cachixConfig`, `mkHome` helper, `homeConfigurations` (`rodat`, `root`, `tomas`), `apps.x86_64-linux.default` (`hm-remote-switch`), and `checks`.
+- `flake.nix` — Flake inputs, shared `cachixConfig` (plain data), the `users` list that generates `homeConfigurations.<user>`, `apps.x86_64-linux.default` (`hm-remote-switch`), and `checks`.
 - `home.nix` — Core Home Manager configuration shared across users (imports `modules/*`, sets `nixpkgs` unfree allowlist, `~/.config/nix/nix.conf` substituters, `services.cns`).
 - `modules/` — Modular tool/shell/editor configs (`utilities.nix` defines `hm-switch`, `hm-check`, `hm-fmt`).
 - `.github/workflows/ci.yml` — Runs `nix flake check` on `ubuntu-latest` and pushes built outputs to `thehuman.cachix.org` on `main` using `CACHIX_AUTH_TOKEN`.
@@ -14,10 +14,11 @@ Personal Nix flake managing Home Manager configurations across workstations and 
 | Command | What it does |
 | --- | --- |
 | `hm-fmt` | Formats all `*.nix` files (`nixfmt`) and `modules/neovim` (`stylua`) in `~/.config/home-manager`. |
-| `hm-check` | Runs working-tree linters (`nixfmt --check`, `statix`, `deadnix`, `stylua --check`, `actionlint`) followed by `nix flake check` (style check, `remote-switch` + `shellcheck`, and all `home-{rodat,root,tomas}` activation packages). Passes extra flags (e.g. `-L`) to `nix flake check`. |
+| `hm-check` | Runs working-tree linters (`nixfmt --check`, `statix`, `deadnix`, `stylua --check`, `actionlint`) followed by `nix flake check` (style check, `remote-switch` + `shellcheck`, and one `home-<user>` activation package per entry in `users`). Passes extra flags (e.g. `-L`) to `nix flake check`. |
 | `hm-check --lint` | Runs only the fast working-tree linters without invoking `nix flake check`. |
-| `hm-switch` | Switches Home Manager and prints `nvd diff`. Uses local `~/.config/home-manager#<user>` when present, or falls back to `github:thehumanworks/home#<user>` with `--refresh` and Cachix/GitHub-auth options on remotes without a checkout. Supports `--push` (push generation to `thehuman` Cachix) and `--remote` (force GitHub flake). |
-| `nix run --refresh github:thehumanworks/home` | First-time remote bootstrap (no checkout needed). Auto-detects current user (`rodat`, `root`, `tomas`; override with `-- --user <name>`), configures Cachix options when trusted, forwards `GITHUB_TOKEN`/`gh auth token`, and runs `home-manager switch` + `nvd diff`. Dry run: `-- -n`. |
+| `hm-switch` | With a local `~/.config/home-manager` checkout: `nh home switch -b backup` on it (live build tree + built-in package diff). Without one: exports `GITHUB_TOKEN`/`GH_TOKEN`/`gh auth token` as a Nix access token and runs `nix run --refresh github:thehumanworks/home`. Supports `--push` (push the new generation to `thehuman` Cachix; skipped on dry runs) and forwards `nh` flags like `-n` (dry run), `-a` (ask), `-u`/`-U <input>` (update lockfile, checkout only). |
+| `nix run --refresh github:thehumanworks/home` | Remote bootstrap/update without a checkout: switches the current `$USER` to the fetched flake revision via `nh home switch` (flags after `--` go to `nh`, e.g. `-- -n` for a dry run). The repo is private, so on a machine without `hm-switch` prefix it with `NIX_CONFIG="access-tokens = github.com=$GITHUB_TOKEN"`. |
+| `home-manager switch --flake <ref>` / `nh home switch <ref>` | Also work bare, with no wrapper and no `--impure`: both select `homeConfigurations.$USER`. |
 | `nix fmt` | Standard flake formatter (`nixfmt-tree`, Nix files only). |
 | `nix flake check` | Runs all flake checks directly (useful before `hm-check` is activated). |
 
@@ -30,5 +31,15 @@ Personal Nix flake managing Home Manager configurations across workstations and 
 ## Conventions & Gotchas
 
 - **Do not shadow `pkgs.*` in `extraSpecialArgs`:** `modules/utilities.nix` uses `with pkgs; [ ... cachix ... ]`, so the shared Cachix config is passed as `cachixConfig` (not `cachix`).
-- **Adding a user:** Add an entry to `users` in `flake.nix` (`<username> = "<homeDirectory>";`). It automatically gets a `homeConfigurations.<user>`, a `checks.x86_64-linux.home-<user>`, and support in `hm-remote-switch`.
-- **Cachix binary caches:** `https://thehuman.cachix.org` and `https://nixpkgs-python.cachix.org` are defined once in `cachixConfig` in `flake.nix` and reused by `home.nix`, `hm-remote-switch`, and `hm-switch`.
+- **Users are a list, not impure lookups:** `homeConfigurations` is generated from `users` in `flake.nix` (`rodat`, `root`, `tomas`; home directory is `/root` or `/home/<user>`). A new username is a one-word addition there. Do not reintroduce `builtins.getEnv`/`--impure`.
+- **Cachix binary caches:** `https://thehuman.cachix.org` and `https://nixpkgs-python.cachix.org` are defined once in `cachixConfig` in `flake.nix` and reused by `home.nix` and `hm-remote-switch`.
+- **Cache trust is per machine, not scripted:** `root` needs no setup (`hm-remote-switch` passes the public keys itself). Unprivileged users need the caches trusted by the Nix daemon once per machine; until then Nix warns (`ignoring untrusted substituter`) and builds locally. Either pass the two lines as `--extra-conf` to the Determinate installer, or run:
+
+  ```sh
+  sudo tee -a /etc/nix/nix.custom.conf <<'EOF'  # /etc/nix/nix.conf on non-Determinate installs
+  extra-trusted-substituters = https://thehuman.cachix.org https://nixpkgs-python.cachix.org
+  extra-trusted-public-keys = thehuman.cachix.org-1:5e++Y7TlcHLBOmHnqv1bmgUp0QuFJn+XCzN/V0Y5/6w= nixpkgs-python.cachix.org-1:hxjI7pFxTyuTHn2NkvWCrAUcNZLNS3ZAvfYNuYifcEU=
+  EOF
+  sudo systemctl restart nix-daemon
+  ```
+- **`nh` and store paths:** `hm-remote-switch` passes `path:${self}`; a bare `/nix/store/...` argument makes `nh` treat it as a pre-built result instead of a flake.
