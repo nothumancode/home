@@ -69,7 +69,8 @@ jobs:
           export HOME="$RUNNER_TEMP/mise-bootstrap"
           mkdir -p "$HOME"
           curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL https://mise.run/bash -o "$HOME/install.sh"
-          bash "$HOME/install.sh"
+          MISE_SELF_UPDATE_MINIMUM_RELEASE_AGE=0s bash "$HOME/install.sh"
+          "$HOME/.local/bin/mise" --version
           echo "MISE_BIN=$HOME/.local/bin/mise" >> "$GITHUB_ENV"
       - name: Bootstrap and verify the global profile without Nix
         run: tests/mise.sh

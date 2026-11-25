@@ -18,7 +18,7 @@ printf 'model = "personal"\n' >"$HOME/.codex/config.toml"
 echo '{"packages":["local:my-extension"]}' >"$HOME/.pi/agent/settings.json"
 echo '[test]' >"$HOME/.config/git/config"
 echo '  mine = intact' >>"$HOME/.config/git/config"
-"${bootstrap[@]}" --dry-run >plan.log 2>&1
+"${bootstrap[@]}" --dry-run 2>&1 | tee plan.log
 grep -q 'brain install --quiet' plan.log
 test ! -L "$HOME/.config/mise" && test ! -e "$HOME/.bashrc"
 echo 'local completion rules' >"$HOME/.editorconfig"
