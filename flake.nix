@@ -7,6 +7,7 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+    wit.url = "github:thehumanworks/wit";
     capnshell.url = "github:thehumanworks/capnshell";
     twg.url = "github:thehumanworks/twg-nix";
     kbtd.url = "github:thehumanworks/kbtd";

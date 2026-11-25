@@ -25,6 +25,14 @@
           provider = "doppler";
           value = "CACHIX_ACTIVATE_TOKEN";
         };
+        MODAL_TOKEN_ID = {
+          provider = "doppler";
+          value = "MODAL_TOKEN_ID";
+        };
+        MODAL_TOKEN_SECRET = {
+          provider = "doppler";
+          value = "MODAL_TOKEN_SECRET";
+        };
         GITHUB_ENTERPRISE_HOST = {
           provider = "doppler";
           value = "GITHUB_ENTERPRISE_HOST";

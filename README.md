@@ -29,6 +29,30 @@ USER=rodat HOME=/home/rodat NIX_CONFIG="access-tokens = github.com=$GITHUB_TOKEN
 The files land in the real home, so later shells need no special environment.
 Use the same command to update a running sandbox.
 
+### Modal
+
+`modal-sandbox` does the above in a Modal image and starts a sandbox from it:
+
+```sh
+id=$(modal-sandbox)             # current main; or: modal-sandbox <commit|branch|tag>
+fnox exec -- modal shell "$id"
+```
+
+To start with a repository checked out for an agent to work on, add
+`--with-git-repo <url>`; it is cloned into `/root/<name>` on its default branch,
+or on `--with-git-branch <branch>`. Without the flag nothing is cloned. The
+GitHub token is used for the clone only and is not left in the sandbox.
+
+The image is cached per commit, so only a new commit rebuilds it. The sandbox
+stops after an hour (`--timeout <seconds>`) and belongs to the Modal app
+`human-nix` (`--app <name>` for another). Modal credentials come from the
+environment, `~/.modal.toml`, or fnox. While this repository is private, the
+image build reads a token from a Modal secret, created once:
+
+```sh
+fnox exec -- modal secret create github GITHUB_TOKEN="$(gh auth token)"
+```
+
 ## Deploy with Cachix
 
 Cachix Deploy pushes a built generation to long-lived machines; each runs an

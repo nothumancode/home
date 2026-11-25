@@ -156,6 +156,12 @@ in
         description = "Gateway for multiple MCP server tools.";
         oauth.scope = "openid offline_access";
       };
+      cns = {
+        type = "stdio";
+        command = "cns";
+        args = [ "mcp" ];
+        description = "Run commands across the network of connected devices via CNS";
+      };
     };
   };
 

@@ -6,6 +6,7 @@
 
 {
   imports = [
+    inputs.wit.homeManagerModules.default
     inputs.capnshell.homeModules.default
     inputs.twg.homeManagerModules.default
     inputs.brain.homeManagerModules.default
@@ -20,6 +21,7 @@
     ./modules/fnox.nix
     ./modules/gh.nix
     ./modules/git.nix
+    ./modules/modal.nix
     ./modules/neovim.nix
     ./modules/nh.nix
     ./modules/pi-coding-agent.nix
