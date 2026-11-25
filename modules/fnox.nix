@@ -17,6 +17,14 @@
           provider = "doppler";
           value = "CACHIX_AUTH_TOKEN";
         };
+        CACHIX_AGENT_TOKEN = {
+          provider = "doppler";
+          value = "CACHIX_AGENT_TOKEN";
+        };
+        CACHIX_ACTIVATE_TOKEN = {
+          provider = "doppler";
+          value = "CACHIX_ACTIVATE_TOKEN";
+        };
         GITHUB_ENTERPRISE_HOST = {
           provider = "doppler";
           value = "GITHUB_ENTERPRISE_HOST";

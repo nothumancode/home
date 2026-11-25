@@ -6,11 +6,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1795546315,
-        "narHash": "sha256-vjBZOAq+Bf9Kcffizvk9suox39bKO5/WP6kDmCgSXY8=",
+        "lastModified": 1795599580,
+        "narHash": "sha256-WfnMfZuZqHXySIokmz562YbSNhd793wIsrd8GRFsbkI=",
         "owner": "thehumanworks",
         "repo": "brain",
-        "rev": "e2cd20c80139376526ba5f1427bc065383a76da6",
+        "rev": "d7a0251491f78321602693ec22b0d27c76f74680",
         "type": "github"
       },
       "original": {
@@ -24,11 +24,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1795548858,
-        "narHash": "sha256-4uffnJXp6Y8lLNPVi5rmjeQ+M5f38HReAN3y1yiZ7UA=",
+        "lastModified": 1795551705,
+        "narHash": "sha256-BvEPm55rli/sLMHuFdZ3vVNsHNEe77GyF7C0mv6DZ0A=",
         "owner": "thehumanworks",
         "repo": "capnshell",
-        "rev": "82734089aa9b920e9ff6b5dfb99cc0099dfa63a9",
+        "rev": "80fdd82b28d5f74515ce33c9c8de622b2329f594",
         "type": "github"
       },
       "original": {

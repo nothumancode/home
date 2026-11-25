@@ -52,12 +52,20 @@
         };
       forAllSystems = fn: lib.genAttrs systems (system: fn (pkgsFor system));
 
-      # `home-manager switch --flake` and `nh home switch` select homeConfigurations.$USER.
-      users = [
-        "rodat"
-        "root"
-        "tomas"
-      ];
+      # One account everywhere. `home-manager switch --flake` and `nh home switch` select
+      # homeConfigurations.$USER; sandboxes with another user alias it (see README).
+      username = "rodat";
+
+      # Machines running a Cachix Deploy agent. The agent names itself after the hostname
+      # (modules/cachix-deploy.nix), and every machine gets the same generation.
+      deployHosts = [ "LT-POR-02056" ];
+
+      # Keep the activation package as a store reference so pushing the spec pushes its closure.
+      cachixDeploy = (pkgsFor "x86_64-linux").writeText "cachix-deploy.json" (
+        builtins.toJSON {
+          agents = lib.genAttrs deployHosts (_: self.homeConfigurations.${username}.activationPackage);
+        }
+      );
 
       # `nix run <flake>`: switch $USER to this exact flake revision (no checkout needed).
       hmRemoteSwitch =
@@ -73,10 +81,15 @@
           text = ''
             export USER="''${USER:-$(id -un)}"
 
-            # Unprivileged users rely on the caches being trusted in /etc/nix (see AGENTS.md);
-            # Nix warns and builds locally when they are not.
+            # Home Manager needs a Nix profile directory, and a fresh account has none
+            # until its first nix-env/nix profile call.
+            mkdir -p "''${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles"
+
+            # Whoever can write the store (root, or the owner of a single-user install) can
+            # trust the caches itself. Everyone else relies on /etc/nix (see AGENTS.md); Nix
+            # warns and builds locally when they are not trusted there.
             caches="extra-substituters = ${toString cachixConfig.substituters}"
-            if [[ "$(id -u)" -eq 0 ]]; then
+            if [[ -w /nix/var/nix/db ]]; then
               caches+=$'\n'"extra-trusted-public-keys = ${toString cachixConfig.publicKeys}"
             fi
             export NIX_CONFIG="''${NIX_CONFIG:-}"$'\n'"$caches"
@@ -106,6 +119,11 @@
       apps.x86_64-linux.default = {
         type = "app";
         program = lib.getExe hmRemoteSwitch;
+      };
+
+      packages.x86_64-linux = {
+        cachix-deploy = cachixDeploy;
+        default = cachixDeploy;
       };
 
       checks = forAllSystems (
@@ -146,31 +164,25 @@
         }
         // lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
           remote-switch = hmRemoteSwitch;
+          cachix-deploy = cachixDeploy;
+          home = self.homeConfigurations.${username}.activationPackage;
         }
-        // lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") (
-          lib.mapAttrs' (
-            user: hm: lib.nameValuePair "home-${user}" hm.activationPackage
-          ) self.homeConfigurations
-        )
       );
 
-      homeConfigurations = lib.genAttrs users (
-        username:
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = pkgsFor "x86_64-linux";
-          modules = [
-            ./home.nix
-            {
-              home = {
-                inherit username;
-                homeDirectory = if username == "root" then "/root" else "/home/${username}";
-              };
-            }
-          ];
-          extraSpecialArgs = {
-            inherit cachixConfig inputs remoteFlake;
-          };
-        }
-      );
+      homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
+        pkgs = pkgsFor "x86_64-linux";
+        modules = [
+          ./home.nix
+          {
+            home = {
+              inherit username;
+              homeDirectory = "/home/${username}";
+            };
+          }
+        ];
+        extraSpecialArgs = {
+          inherit cachixConfig inputs remoteFlake;
+        };
+      };
     };
 }
