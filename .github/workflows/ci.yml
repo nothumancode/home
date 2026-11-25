@@ -54,7 +54,7 @@ jobs:
           : "${CACHIX_AUTH_TOKEN:?Set the CACHIX_AUTH_TOKEN secret to push}"
           spec=$(nix build --no-link --print-out-paths .#cachix-deploy)
           if ! jq -e --arg agent "$DEPLOY_AGENT" '.agents | has($agent)' "$spec" >/dev/null; then
-            printf 'Agent %s is not listed in flake.nix\n' "$DEPLOY_AGENT" >&2
+            printf 'Agent %s is not listed in nix/outputs.nix\n' "$DEPLOY_AGENT" >&2
             exit 1
           fi
           cachix push thehuman "$spec"

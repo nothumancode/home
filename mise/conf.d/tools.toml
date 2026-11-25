@@ -70,8 +70,8 @@ codex = "latest"
 pi = "1.4.0"
 dagu = "2.27.0"
 twg = "1.4.4"
-"github:thehumanworks/capnshell" = "2.0.0"
-"pypi:git+https://github.com/thehumanworks/brain.git" = { version = "e2cd20c80139376526ba5f1427bc065383a76da6", uvx_args = "--python 3.14" }
+"github:thehumanworks/capnshell" = "2.1.1"
+"pypi:git+https://github.com/thehumanworks/brain.git" = { version = "d7a0251491f78321602693ec22b0d27c76f74680", uvx_args = "--python 3.14" }
 "pypi:git+https://github.com/thehumanworks/kbtd.git" = "1f2411cf6183eaf3cc303754daebf6aa6ea89545"
 
 [tools."http:blesh"]
