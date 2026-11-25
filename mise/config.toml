@@ -32,6 +32,7 @@ manifest = "git"
 "~/.codex/config.toml/home-profile" = { source = "../shared/codex/config.toml", merge = "missing", permissions = "0600" }
 "~/.pi/agent/settings.json/home-profile" = { source = "../shared/pi/settings.json", merge = "missing", permissions = "0600" }
 "~/.pi/agent/models.json/home-profile" = { source = "../shared/pi/models.json", merge = "missing", permissions = "0600" }
+"~/.pi/agent/mcp.json/home-profile" = { source = "../shared/pi/mcp.json", merge = "missing", permissions = "0600" }
 "~/.pi/agent/open-tui.json/home-profile" = { source = "../shared/pi/open-tui.json", merge = "missing", permissions = "0600" }
 "~/.bashrc/local-bin" = { line = 'export PATH="$HOME/.local/bin:$PATH"', position = "prepend" }
 "~/.zshenv/local-bin" = { line = 'export PATH="$HOME/.local/bin:$PATH"', position = "prepend" }

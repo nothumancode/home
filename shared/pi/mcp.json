@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "cns": {
+      "type": "stdio",
+      "command": "cns",
+      "args": ["mcp"],
+      "description": "Run commands across the network of connected devices via CNS"
+    }
+  }
+}

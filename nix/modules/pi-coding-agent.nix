@@ -43,7 +43,7 @@ in
   };
 
   home.file.".pi/agent/mcp.json".text = builtins.toJSON {
-    mcpServers = {
+    mcpServers = (builtins.fromJSON (builtins.readFile ../../shared/pi/mcp.json)).mcpServers // {
       gateway = {
         url = "https://gateway.docker.com/mcp/gateways/sk/usergw-a58008f92e8bde6efe78a45a556242d466bf8147/mcp";
         type = "http";

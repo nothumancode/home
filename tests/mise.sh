@@ -16,6 +16,7 @@ mkdir -p "$HOME/.claude" "$HOME/.codex" "$HOME/.pi/agent" "$HOME/.config/git"
 echo '{"hooks":{"Stop":[]},"theme":"personal"}' >"$HOME/.claude/settings.json"
 printf 'model = "personal"\n' >"$HOME/.codex/config.toml"
 echo '{"packages":["local:my-extension"]}' >"$HOME/.pi/agent/settings.json"
+echo '{"mcpServers":{"other":{"command":"existing"}}}' >"$HOME/.pi/agent/mcp.json"
 echo '[test]' >"$HOME/.config/git/config"
 echo '  mine = intact' >>"$HOME/.config/git/config"
 "${bootstrap[@]}" --dry-run 2>&1 | tee plan.log
@@ -37,6 +38,8 @@ git config --get-all credential.https://github.com.helper | grep -Fq "$HOME/.loc
 if grep -q GITHUB_ENTERPRISE_HOST "$HOME/.config/fnox/config.toml"; then exit 1; fi
 jq -e '.theme == "personal" and .hooks.Stop == [] and (.hooks.SessionStart | length == 1)' "$HOME/.claude/settings.json" >/dev/null
 jq -e '.packages == ["local:my-extension"] and .defaultProvider == "openai"' "$HOME/.pi/agent/settings.json" >/dev/null
+jq -e '.mcpServers.cns.args == ["mcp"] and .mcpServers.other.command == "existing"' "$HOME/.pi/agent/mcp.json" >/dev/null
+mise exec -- modal --version
 grep -q 'model = "personal"' "$HOME/.codex/config.toml"
 test -s "$HOME/.pi/agent/extensions/brain-brief.ts"
 test "$(stat -c %a "$HOME/.pi/agent/open-tui.json")" = 600

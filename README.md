@@ -13,6 +13,10 @@ The root `flake.nix` and `flake.lock` are the single public Nix entry point; the
 
 See the [sandbox setup](nix/README.md#sandboxes) for the `rodat` home and platforms that run as root.
 
+### Modal
+
+See the [Modal guide](nix/README.md#modal) for `modal-sandbox`.
+
 ## Deploy with Cachix
 
 Follow [agent enrollment and deployment](nix/README.md#deploy-with-cachix). The Nix workflow deploys only on a manual `main` run with an agent selected.
