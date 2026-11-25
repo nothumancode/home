@@ -1,0 +1,14 @@
+default_provider = "doppler"
+if_missing = "warn"
+
+[daemon]
+enabled = true
+
+[providers.doppler]
+type = "doppler"
+project = "vault"
+config = "prd"
+
+[secrets.GITHUB_ENTERPRISE_HOST]
+provider = "doppler"
+value = "GITHUB_ENTERPRISE_HOST"

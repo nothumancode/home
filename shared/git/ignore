@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.env.local
+.env.*.local
+.envrc.local
+.direnv/

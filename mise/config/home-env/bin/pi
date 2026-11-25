@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+pi=$(mise -C "$HOME" which pi)
+doppler=$(mise -C "$HOME" which doppler)
+exec "$doppler" run -p vault -c prd --only-secrets LOGGLY_API_TOKEN --only-secrets LOGGLY_SUBDOMAIN \
+  --only-secrets EXA_API_KEY --only-secrets AI_GATEWAY_API_KEY -- "$pi" "$@"

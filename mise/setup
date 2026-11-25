@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Install the Mise profile without changing shell startup files or running tools."""
+
+import argparse
+import filecmp
+import os
+from pathlib import Path
+import shutil
+import sys
+import tempfile
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--backup", action="store_true", help="back up conflicting files before installing")
+    mode.add_argument("--keep-existing", action="store_true", help="skip conflicting files")
+    parser.add_argument("--dry-run", action="store_true", help="show the plan without writing")
+    args = parser.parse_args()
+
+    os.umask(0o077)
+    app = Path(__file__).resolve().parent
+    shared = app.parent / "shared"
+    home = Path.home()
+    config = Path(os.environ.get("XDG_CONFIG_HOME") or home / ".config")
+    mise = Path(os.environ.get("MISE_CONFIG_DIR") or config / "mise")
+    pi = Path(os.environ.get("PI_CODING_AGENT_DIR") or home / ".pi/agent")
+    claude = Path(os.environ.get("CLAUDE_CONFIG_DIR") or home / ".claude")
+    codex = Path(os.environ.get("CODEX_HOME") or home / ".codex")
+    gh = Path(os.environ.get("GH_CONFIG_DIR") or config / "gh")
+
+    files = {
+        mise / "conf.d/60-home.toml": app / "config.toml",
+        mise / "conf.d/61-session.toml": shared / "session.toml",
+        home / ".editorconfig": shared / "editorconfig",
+        config / "fnox/config.toml": shared / "fnox/config.toml",
+        config / "git/home.gitconfig": shared / "git/home.gitconfig",
+        config / "git/ignore": shared / "git/ignore",
+        gh / "config.yml": shared / "gh/config.yml",
+        config / "lazygit/config.yml": shared / "lazygit/config.yml",
+        config / "tmux/home.conf": shared / "tmux/home.conf",
+        config / "nvim/lua/home.lua": shared / "nvim/home.lua",
+        config / "nvim/lua/dev_tools.lua": shared / "nvim/dev_tools.lua",
+        config / "nvim/colors/vercel.lua": shared / "nvim/colors/vercel.lua",
+        config / "home-env/bin/setup-github-auth": shared / "bin/setup-github-auth",
+        config / "home-env/bin/vim": app / "config/home-env/bin/vi",
+    }
+    for src in sorted((app / "config").rglob("*")):
+        if src.is_file():
+            files[config / src.relative_to(app / "config")] = src
+    seeds = {
+        claude / "settings.json": shared / "claude/settings.json",
+        codex / "config.toml": shared / "codex/config.toml",
+        **{pi / f.name: f for f in (shared / "pi").glob("*.json")},
+    }
+
+    plan = []
+    errors = []
+    for dst, src in {**files, **seeds}.items():
+        if not dst.is_absolute():
+            errors.append(f"{dst}: configuration directories must be absolute")
+            continue
+        for parent in dst.parents:
+            if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+                errors.append(f"{dst}: not writing through {parent}")
+                break
+            if parent == home:
+                break
+        if dst.is_dir() and not dst.is_symlink():
+            errors.append(f"{dst}: expected a file, found a directory")
+            continue
+        if dst.exists() or dst.is_symlink():
+            if dst in seeds:
+                print(f"Keep existing agent settings: {dst}")
+                continue
+            if not dst.is_symlink() and dst.is_file() and filecmp.cmp(src, dst, shallow=False) and (
+                not os.access(src, os.X_OK) or os.access(dst, os.X_OK)
+            ):
+                continue
+            if args.keep_existing:
+                print(f"Keep: {dst}")
+                continue
+            if not args.backup:
+                errors.append(f"{dst}: differs (use --keep-existing or --backup)")
+                continue
+            backup = dst.with_name(dst.name + ".pre-home-mise")
+            n = 0
+            while backup.exists() or backup.is_symlink():
+                n += 1
+                backup = dst.with_name(f"{dst.name}.pre-home-mise.{n}")
+        else:
+            backup = None
+        plan.append((src, dst, backup))
+
+    if errors:
+        sys.exit("\n".join(errors) + "\nNothing installed.")
+    for src, dst, backup in plan:
+        print(f"Install: {dst}" + (f" (back up to {backup})" if backup else ""))
+        if args.dry_run:
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(dir=dst.parent, delete=False) as tmp:
+            try:
+                with src.open("rb") as source:
+                    shutil.copyfileobj(source, tmp)
+                tmp.flush()
+                os.chmod(tmp.name, 0o700 if os.access(src, os.X_OK) else 0o600)
+                if backup:
+                    dst.rename(backup)
+                os.replace(tmp.name, dst)
+            finally:
+                Path(tmp.name).unlink(missing_ok=True)
+    if not plan:
+        print("Nothing to install.")
+
+
+if __name__ == "__main__":
+    main()

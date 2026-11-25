@@ -1,0 +1,20 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "autoCompactEnabled": true,
+  "autoScrollEnabled": true,
+  "bashEditDiffEnabled": true,
+  "copyOnSelect": true,
+  "effortLevel": "high",
+  "idleCompaction": true,
+  "outputStyle": "Concise",
+  "showThinkingSummaries": true,
+  "showTurnDuration": true,
+  "spinnerTipsEnabled": false,
+  "terminalProgressBarEnabled": true,
+  "theme": "dark",
+  "tui": "fullscreen"
+}

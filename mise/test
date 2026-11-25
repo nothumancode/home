@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+app=$(cd -- "$(dirname -- "$0")" && pwd)
+runtime=$(command -v "${MISE_BIN:-mise}")
+tmp=$(mktemp -d)
+trap 'rm -rf -- "$tmp"' EXIT
+mkdir -p "$tmp/home/.local/bin" "$tmp/outside"
+cp -- "$runtime" "$tmp/home/.local/bin/mise"
+cd "$tmp/outside"
+
+clean=(env -i HOME="$tmp/home" PATH="$tmp/home/.local/bin:/usr/bin:/bin" TERM=dumb CI=1)
+"${clean[@]}" bash -s -- "$app" <<'SMOKE'
+set -euo pipefail
+app=$1
+export XDG_CONFIG_HOME="$HOME/config"
+mkdir -p "$XDG_CONFIG_HOME/git" "$HOME/.codex"
+printf '%s\n' '[user]' '  name = Existing' > "$XDG_CONFIG_HOME/git/config"
+printf '%s\n' 'model = "personal"' > "$HOME/.codex/config.toml"
+if "$app/setup"; then exit 1; fi
+test ! -e "$HOME/.editorconfig"
+"$app/setup" --dry-run --backup
+test ! -e "$HOME/.editorconfig"
+"$app/setup" --keep-existing
+grep -q Existing "$XDG_CONFIG_HOME/git/config"
+"$app/setup" --backup
+grep -q Existing "$XDG_CONFIG_HOME/git/config.pre-home-mise"
+grep -q personal "$HOME/.codex/config.toml"
+before=$(stat -c %y "$HOME/.editorconfig")
+"$app/setup"
+test "$before" = "$(stat -c %y "$HOME/.editorconfig")"
+test ! -e "$XDG_CONFIG_HOME/git/config.pre-home-mise.1"
+test ! -e "$HOME/.bashrc"
+test "$(git config --get diff.tool)" = difftastic
+test "$(git config --get user.useConfigOnly)" = true
+test "$(git config --get filter.lfs.required)" = true
+test "$(git config --get credential.https://github.com.helper | tail -1)" = '!gh auth git-credential'
+test "$(stat -c %a "$HOME/.claude/settings.json")" = 600
+
+mise --version
+mise install jq tmux fzf zoxide
+export MISE_AUTO_INSTALL=0 MISE_OFFLINE=1 MISE_LOG_LEVEL=error
+eval "$(mise env -s bash)"
+test "$EDITOR:$DOPPLER_PROJECT" = nvim:vault
+test "$(command -v jq)" = "$(mise which jq)"
+jq -e '.attribution.commit == ""' "$HOME/.claude/settings.json" >/dev/null
+jq -e '.defaultModel == "gpt-6.2-sol"' "$HOME/.pi/agent/settings.json" >/dev/null
+test "$(command -v pi)" = "$XDG_CONFIG_HOME/home-env/bin/pi"
+test "$(command -v twg)" = "$XDG_CONFIG_HOME/home-env/bin/twg"
+mise tasks ls | grep home-brain-hooks >/dev/null
+shellrc="$XDG_CONFIG_HOME/home-env/shell.sh"
+bash --noprofile --norc -ic '. "$1"; test "$HISTSIZE" = 50000 && alias gl && type z && shopt -q globstar' _ "$shellrc"
+if command -v zsh >/dev/null; then
+  zsh -fic '. "$1"; alias ll && type z' _ "$shellrc"
+fi
+sock="$HOME/tmux.sock"
+trap 'tmux -S "$sock" kill-server 2>/dev/null || true' EXIT
+tmux -S "$sock" -f "$XDG_CONFIG_HOME/tmux/tmux.conf" new-session -d
+test "$(tmux -S "$sock" show -gv base-index)" = 1
+test "$(tmux -S "$sock" show -sv extended-keys-format)" = csi-u
+test "$(tmux -S "$sock" show -gv status-style)" = 'bg=#171717,fg=#EDEDED'
+
+mkdir -p "$HOME/fixture-bin"
+cat >"$HOME/fixture-bin/mise" <<'FAKE_MISE'
+#!/bin/sh
+[ "$1" = -C ] && [ "$2" = "$HOME" ] && [ "$3" = which ] || exit 1
+printf '%s/fixture-bin/real-%s\n' "$HOME" "$4"
+FAKE_MISE
+cat >"$HOME/fixture-bin/real-doppler" <<'FAKE_DOPPLER'
+#!/bin/sh
+printf '<%s>' "$@"
+FAKE_DOPPLER
+chmod +x "$HOME/fixture-bin/"*
+export PATH="$HOME/fixture-bin:$PATH"
+test "$(pi 'a b')" = "<run><-p><vault><-c><prd><--only-secrets><LOGGLY_API_TOKEN><--only-secrets><LOGGLY_SUBDOMAIN><--only-secrets><EXA_API_KEY><--only-secrets><AI_GATEWAY_API_KEY><--><$HOME/fixture-bin/real-pi><a b>"
+test "$(twg 'a b')" = "<run><-p><vault><-c><prd><--only-secrets><TWG_USER><--only-secrets><TWG_SITE><--only-secrets><TWG_TOKEN><--><$HOME/fixture-bin/real-twg><a b>"
+SMOKE

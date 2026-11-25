@@ -35,16 +35,7 @@
 
     sessionPath = [ "$HOME/.local/bin" ];
 
-    sessionVariables = {
-      EDITOR = "nvim";
-      VISUAL = "nvim";
-      PAGER = "less";
-      LESS = "-FRX";
-      NODE_USE_SYSTEM_CA = "1";
-      UV_SYSTEM_CERTS = "true";
-      DOPPLER_PROJECT = "vault";
-      DOPPLER_CONFIG = "prd";
-    };
+    sessionVariables = (builtins.fromTOML (builtins.readFile ../shared/session.toml)).env;
   };
 
   xdg = {

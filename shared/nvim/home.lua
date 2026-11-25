@@ -76,6 +76,14 @@ end, "Explore files")
 map("<leader>gd", MiniDiff.toggle_overlay, "Toggle Git diff overlay")
 
 local cmp = require("blink.cmp")
+local sources = { default = { "lsp", "path", "snippets", "buffer" } }
+if vim.g.home_nix then
+	sources.per_filetype = { nix = { inherit_defaults = true, "nixpkgs" } }
+	sources.providers = {
+		lsp = { fallbacks = { "buffer", "nixpkgs" } },
+		nixpkgs = { name = "Nixpkgs", module = "nixpkgs_completion", async = true },
+	}
+end
 cmp.setup({
 	keymap = { preset = "default" }, -- Ctrl-Space: menu/docs; Ctrl-n/p: select; Ctrl-y: accept
 	completion = {
@@ -83,14 +91,8 @@ cmp.setup({
 		documentation = { auto_show = true, auto_show_delay_ms = 200 },
 	},
 	signature = { enabled = true },
-	sources = {
-		default = { "lsp", "path", "snippets", "buffer" },
-		per_filetype = { nix = { inherit_defaults = true, "nixpkgs" } },
-		providers = {
-			lsp = { fallbacks = { "buffer", "nixpkgs" } },
-			nixpkgs = { name = "Nixpkgs", module = "nixpkgs_completion", async = true },
-		},
-	},
+	sources = sources,
+	fuzzy = not vim.g.home_nix and { implementation = "lua" } or nil,
 })
 
 -- Use Neovim's native LSP client and nvim-lspconfig's root/command defaults.
@@ -112,12 +114,14 @@ vim.lsp.enable({
 	"html",
 	"jsonls",
 	"lua_ls",
-	"nil_ls",
 	"pyright",
 	"taplo",
 	"ts_ls",
 	"yamlls",
 })
+if vim.g.home_nix then
+	vim.lsp.enable("nil_ls")
+end
 
 vim.api.nvim_create_autocmd("LspAttach", {
 	callback = function(ev)
@@ -146,7 +150,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	end,
 })
 
-local dev_tools = require("dev_tools") -- generated from modules/dev-tools.nix
+local dev_tools = require("dev_tools")
 local lint = require("lint")
 lint.linters_by_ft = dev_tools.linters
 -- BufWritePost runs after Conform has formatted and written the buffer.

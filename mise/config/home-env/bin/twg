@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+twg=$(mise -C "$HOME" which twg)
+doppler=$(mise -C "$HOME" which doppler)
+exec "$doppler" run -p vault -c prd --only-secrets TWG_USER --only-secrets TWG_SITE \
+  --only-secrets TWG_TOKEN -- "$twg" "$@"

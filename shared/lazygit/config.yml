@@ -1,0 +1,15 @@
+{
+  "disableStartupPopups": true,
+  "git": {
+    "pagers": [
+      {
+        "colorArg": "always",
+        "pager": "delta --paging=never"
+      }
+    ]
+  },
+  "gui": {
+    "nerdFontsVersion": ""
+  },
+  "notARepository": "quit"
+}

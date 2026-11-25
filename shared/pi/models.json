@@ -1,0 +1,22 @@
+{
+  "$schema": "https://pi.dev/schemas/models.schema.json",
+  "providers": {
+    "openai": {
+      "modelOverrides": {
+        "gpt-6.2-astra": {
+          "contextWindow": 400000
+        },
+        "gpt-6.2-sol": {
+          "contextWindow": 400000
+        }
+      }
+    },
+    "vercel-ai-gateway": {
+      "modelOverrides": {
+        "google/gemini-4-neon": {
+          "contextWindow": 600000
+        }
+      }
+    }
+  }
+}

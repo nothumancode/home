@@ -75,10 +75,10 @@
       ))
     ];
 
-    initLua = builtins.readFile ./neovim/init.lua;
+    initLua = "vim.g.home_nix = true\n" + builtins.readFile ../../shared/nvim/home.lua;
   };
 
-  xdg.configFile."nvim/colors/vercel.lua".source = ./neovim/colors/vercel.lua;
+  xdg.configFile."nvim/colors/vercel.lua".source = ../../shared/nvim/colors/vercel.lua;
   xdg.configFile."nvim/lua/nixpkgs_completion.lua".text = ''
     local packages = 'path:${inputs.nixpkgs}#legacyPackages.${pkgs.stdenv.hostPlatform.system}'
   ''

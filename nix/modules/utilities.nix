@@ -62,9 +62,7 @@ let
       fi
       cd "$repo"
       find . -name '*.nix' -print0 | xargs -0 nixfmt
-      if [[ -d modules/neovim ]]; then
-        stylua --no-editorconfig modules/neovim
-      fi
+      stylua --no-editorconfig nix/modules/neovim shared/nvim mise/config/nvim
     '';
   };
 
@@ -99,9 +97,7 @@ let
       find . -name '*.nix' -print0 | xargs -0 nixfmt --check
       statix check .
       deadnix --fail .
-      if [[ -d modules/neovim ]]; then
-        stylua --no-editorconfig --check modules/neovim
-      fi
+      stylua --no-editorconfig --check nix/modules/neovim shared/nvim mise/config/nvim
       if [[ -d .github/workflows ]]; then
         find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -exec actionlint {} +
       fi
@@ -138,25 +134,6 @@ in
       enable = true;
       enableBashIntegration = true;
       enableZshIntegration = true;
-      defaultCommand = "fd --type f --hidden --follow --exclude .git";
-      defaultOptions = [
-        "--height=40%"
-        "--layout=reverse"
-        "--border=rounded"
-        "--info=inline-right"
-      ];
-      fileWidget = {
-        command = "fd --type f --hidden --follow --exclude .git";
-        options = [
-          "--preview 'bat --color=always --style=numbers --line-range=:200 {} 2>/dev/null'"
-        ];
-      };
-      changeDirWidget = {
-        command = "fd --type d --hidden --follow --exclude .git";
-        options = [
-          "--preview 'eza --tree --level=2 --color=always --icons=never {} 2>/dev/null'"
-        ];
-      };
     };
 
     jq.enable = true;

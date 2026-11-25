@@ -1,0 +1,12 @@
+{
+  "aliases": {
+    "co": "pr checkout",
+    "pc": "pr create",
+    "prc": "pr checks",
+    "pv": "pr view",
+    "rv": "repo view"
+  },
+  "editor": "nvim",
+  "git_protocol": "https",
+  "prompt": "enabled"
+}

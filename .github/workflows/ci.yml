@@ -59,3 +59,17 @@ jobs:
           fi
           cachix push thehuman "$spec"
           cachix deploy activate "$spec" --agent "$DEPLOY_AGENT"
+
+  mise:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable Mise in a temporary home
+        run: |
+          export HOME="$RUNNER_TEMP/mise-bootstrap"
+          mkdir -p "$HOME"
+          curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL https://mise.run/bash -o "$HOME/install.sh"
+          bash "$HOME/install.sh"
+          echo "MISE_BIN=$HOME/.local/bin/mise" >> "$GITHUB_ENV"
+      - name: Test global install, existing files, Bash and tmux without Nix
+        run: mise/test
