@@ -71,5 +71,5 @@ jobs:
           curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL https://mise.run/bash -o "$HOME/install.sh"
           bash "$HOME/install.sh"
           echo "MISE_BIN=$HOME/.local/bin/mise" >> "$GITHUB_ENV"
-      - name: Test global install, existing files, Bash and tmux without Nix
-        run: mise/test
+      - name: Bootstrap and verify the global profile without Nix
+        run: tests/mise.sh

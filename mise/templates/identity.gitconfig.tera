@@ -1,0 +1,3 @@
+[user]
+	name = {{ get_env(name="HOME_GIT_WORK_NAME") | json_encode() }}
+	email = {{ get_env(name="HOME_GIT_WORK_EMAIL") | lower | json_encode() }}

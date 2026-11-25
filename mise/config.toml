@@ -1,96 +1,104 @@
-[tools]
-node = "24"
-python = "3.13"
-bun = "latest"
-go = "latest"
-pnpm = "latest"
-uv = "latest"
-"npm:typescript" = "6"
-
-age = "latest"
-ast-grep = "latest"
-bat = "latest"
-btop = "latest"
-delta = "latest"
-difftastic = "latest"
-direnv = "latest"
-doppler = "latest"
-eza = "latest"
-fd = "latest"
-fnox = "latest"
-fzf = "latest"
-gh = "latest"
-"github:tummychow/git-absorb" = "latest"
-git-lfs = "latest"
-gitleaks = "latest"
-glow = "latest"
-hunk = "latest"
-hyperfine = "latest"
-jq = "latest"
-just = "latest"
-lazygit = "latest"
-lefthook = "latest"
-poppler = "latest"
-"conda:qpdf" = "latest"
-ripgrep = "latest"
-sd = "latest"
-sops = "latest"
-sqlite = "latest"
-tmux = "latest"
-"conda:tokei" = "latest"
-watchexec = "latest"
-xh = "latest"
-yq = "latest"
-zoxide = "latest"
-
-actionlint = "latest"
-hadolint = "latest"
-neovim = "0.12.6"
-prettier = "latest"
-ruff = "latest"
-shellcheck = "latest"
-shfmt = "latest"
-stylua = "latest"
-taplo = "latest"
-tree-sitter = "latest"
-ty = "latest"
-yamllint = "latest"
-"npm:bash-language-server" = "latest"
-"go:golang.org/x/tools/gopls" = "latest"
-lua-language-server = "latest"
-"npm:neovim" = "latest"
-"pypi:pynvim" = "latest"
-"npm:pyright" = "latest"
-"npm:typescript-language-server" = "latest"
-"npm:vscode-langservers-extracted" = "latest"
-"npm:yaml-language-server" = "latest"
-
-claude-code = "latest"
-codex = "latest"
-pi = "1.4.0"
-dagu = "2.27.0"
-twg = "1.4.4"
-"github:thehumanworks/capnshell" = "2.0.0"
-"pypi:git+https://github.com/thehumanworks/brain.git" = { version = "e2cd20c80139376526ba5f1427bc065383a76da6", python = "3.14" }
-"pypi:git+https://github.com/thehumanworks/kbtd.git" = "1f2411cf6183eaf3cc303754daebf6aa6ea89545"
-
-[tools."http:blesh"]
-version = "2026.09.08"
-url = "https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly-20260908%2Bd81fd54.tar.xz"
-checksum = "sha256:7a2445f138e7f099dd5dee749391a8b045646d1b8a605975885be5b34b6b5f7e"
-strip_components = 1
+min_version = "2026.11.14"
+include = ["../shared/session.toml"]
 
 [env]
-_.path = ["{{env.XDG_CONFIG_HOME | default(value=env.HOME ~ '/.config')}}/home-env/bin", "{{env.HOME}}/.local/bin"]
+_.path = ["{{ env.HOME }}/.local/bin"]
 TWG_SKILLS_DIR = "{{env.HOME}}/.agents/skills"
 
-[tasks.home-brain-hooks]
-description = "Install or repair Brain's Claude, Codex and Pi integrations"
-run = "brain install --quiet --claude --codex --pi"
+[bootstrap]
+dotfile_groups = ["cli"]
+
+[settings.dotfiles]
+root = "{{ mise_config_dir }}"
+
+[dotfile_groups.cli]
+root = "config"
+target = "~/.config"
+mode = "symlink-each"
+manifest = "git"
+
+[dotfiles]
+"~/.editorconfig" = { source = "../shared/editorconfig" }
+"~/.config/nvim/lua/home.lua" = { source = "../shared/nvim/home.lua" }
+"~/.config/nvim/lua/dev_tools.lua" = { source = "../shared/nvim/dev_tools.lua" }
+"~/.config/nvim/colors/vercel.lua" = { source = "../shared/nvim/colors/vercel.lua" }
+"~/.config/tmux/home.conf" = { source = "../shared/tmux/home.conf" }
+"~/.config/git/config/home-profile" = { source = "templates/git.inc.tera", template = "tera", comment = "#" }
+"~/.config/git/ignore/home-profile" = { source = "../shared/git/ignore", template = "tera", comment = "#" }
+"~/.config/fnox/config.toml/home-profile" = { source = "../shared/fnox/config.toml", merge = "missing" }
+"~/.config/gh/config.yml/home-profile" = { source = "../shared/gh/config.yml", merge = "missing" }
+"~/.config/lazygit/config.yml/home-profile" = { source = "../shared/lazygit/config.yml", merge = "missing" }
+"~/.claude/settings.json/home-profile" = { source = "../shared/claude/settings.json", merge = "missing", permissions = "0600" }
+"~/.codex/config.toml/home-profile" = { source = "../shared/codex/config.toml", merge = "missing", permissions = "0600" }
+"~/.pi/agent/settings.json/home-profile" = { source = "../shared/pi/settings.json", merge = "missing", permissions = "0600" }
+"~/.pi/agent/models.json/home-profile" = { source = "../shared/pi/models.json", merge = "missing", permissions = "0600" }
+"~/.pi/agent/open-tui.json/home-profile" = { source = "../shared/pi/open-tui.json", merge = "missing", permissions = "0600" }
+"~/.bashrc/local-bin" = { line = 'export PATH="$HOME/.local/bin:$PATH"', position = "prepend" }
+"~/.zshenv/local-bin" = { line = 'export PATH="$HOME/.local/bin:$PATH"', position = "prepend" }
+
+[bootstrap.mise_shell_activate]
+bashrc = true
+zshrc = true
+
+[bootstrap.hooks]
+post-tools = 'mise -C "$HOME" exec -- brain install --quiet --claude --codex --pi'
+
+[shell_alias]
+gs = "git status -sb"
+gd = "git diff"
+gds = "git diff --staged"
+gl = "git log --oneline --graph --decorate -20"
+eza = "eza --git --icons=never --group-directories-first"
+ls = "eza"
+ll = "eza -l"
+la = "eza -a"
+lt = "eza --tree"
+lla = "eza -la"
+
+[wrappers]
+vi = "nvim"
+vim = "nvim"
+vimdiff = { command = "nvim", args = ["-d"] }
+
+[wrappers.pi]
+command = """{{ exec(command=(mise_bin | quote) ~ ' -C "$HOME" which doppler') }}"""
+args = [
+  "run", "-p", "vault", "-c", "prd",
+  "--only-secrets", "LOGGLY_API_TOKEN", "--only-secrets", "LOGGLY_SUBDOMAIN",
+  "--only-secrets", "EXA_API_KEY", "--only-secrets", "AI_GATEWAY_API_KEY",
+  "--", """{{ exec(command=(mise_bin | quote) ~ ' -C "$HOME" which pi') }}""",
+]
+
+[wrappers.twg]
+command = """{{ exec(command=(mise_bin | quote) ~ ' -C "$HOME" which doppler') }}"""
+args = [
+  "run", "-p", "vault", "-c", "prd",
+  "--only-secrets", "TWG_USER", "--only-secrets", "TWG_SITE", "--only-secrets", "TWG_TOKEN",
+  "--", """{{ exec(command=(mise_bin | quote) ~ ' -C "$HOME" which twg') }}""",
+]
+
+[[hooks.enter]]
+shell = "bash"
+script = '[[ -n ${__home_shell_loaded:-} ]] || source {{ mise_config_dir | quote }}/shell/interactive.sh'
+
+[[hooks.enter]]
+shell = "zsh"
+script = '[[ -n ${__home_shell_loaded:-} ]] || source {{ mise_config_dir | quote }}/shell/interactive.sh'
 
 [tasks.home-github-auth]
-description = "Sync personal and enterprise GitHub credentials from Doppler"
-run = "setup-github-auth"
+description = "Log gh into github.com from Doppler (use -E enterprise for the work host)"
+shell = "bash -o pipefail -c"
+env.LOGIN_HOST = "{{ vars.github_host }}"
+env.LOGIN_SECRET = "{{ vars.github_token_name }}"
+run = '''
+doppler secrets get "$LOGIN_SECRET" -p vault -c prd --plain --no-check-version |
+  env -u GH_TOKEN -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN \
+    gh auth login --hostname "$LOGIN_HOST" --git-protocol https --with-token
+'''
+
+[vars]
+github_host = "github.com"
+github_token_name = "GITHUB_TOKEN"
 
 [tasks.home-parsers]
 description = "Build the editor's Tree-sitter parsers (requires Git and a C compiler)"

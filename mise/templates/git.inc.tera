@@ -1,5 +1,5 @@
 [include]
-	path = home.gitconfig
+	path = {{ (mise_config_dir ~ "/../shared/git/home.gitconfig") | canonicalize | json_encode() }}
 [core]
 	pager = delta
 [interactive]
@@ -20,4 +20,4 @@
 	helper =
 	helper = !gh auth git-credential
 [include]
-	path = enterprise.gitconfig
+	path = {{ (xdg_config_home ~ "/git/enterprise.gitconfig") | json_encode() }}

@@ -1,0 +1,14 @@
+{%- set host = get_env(name="GITHUB_ENTERPRISE_HOST") -%}
+{%- if host is not matching(pat="^[A-Za-z0-9][A-Za-z0-9.-]*$") -%}
+{{ throw(message="GITHUB_ENTERPRISE_HOST must be a hostname, not a URL") }}
+{%- endif -%}
+[credential "https://{{ host }}"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.{{ host }}"]
+	helper =
+	helper = !gh auth git-credential
+{% for remote in ["https://" ~ host ~ "/**", "https://*@" ~ host ~ "/**", "ssh://git@" ~ host ~ "/**", "git@" ~ host ~ ":*/**"] -%}
+[includeIf "hasconfig:remote.*.url:{{ remote }}"]
+	path = enterprise-identity.gitconfig
+{% endfor -%}

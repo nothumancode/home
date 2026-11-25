@@ -23,7 +23,7 @@ let
       export DOPPLER_BIN=${lib.escapeShellArg dopplerBin}
       export GH_BIN=${lib.escapeShellArg ghBin}
     ''
-    + builtins.readFile ../../shared/bin/setup-github-auth;
+    + builtins.readFile ../scripts/setup-github-auth;
 
   };
 in

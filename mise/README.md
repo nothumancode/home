@@ -1,67 +1,50 @@
-# Mise home profile
+# Bootstrap a home with Mise
 
-This is a user-global alternative to Home Manager, tested on x86-64 Linux. It installs tool versions and copies ordinary, writable config files. It doesn't need Nix, start services, change your login shell, or sign in to anything. Review the [tool list](config.toml) and [personal defaults](../shared/) first: they include Tomas's Git identity, Pi's model/provider choices and its `defaultProjectTrust = always` policy.
+This profile is for a personal x86-64 Linux account with Git and **Mise 2026.11.14 or newer**. It needs neither Nix nor root. It configures Tomas's Git identity, shell, editor and agent defaults (including Pi's `defaultProjectTrust = always`); review [the profile](config.toml), [tools](conf.d/tools.toml) and [shared settings](../shared/) before applying them.
 
-## Install
+## Install and update
 
-1. Start with Git, Bash, Python 3.8+, curl, CA certificates, tar/xz and sha256sum. Use the [official stable installer](https://mise.jdx.dev/installing-mise.html) if Mise isn't already installed:
-
-   ```bash
-   installer=$(mktemp)
-   curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL https://mise.run/bash -o "$installer" &&
-     bash "$installer"
-   rm -f "$installer"
-   "$HOME/.local/bin/mise" --version
-   ```
-
-   This installer adds Mise activation to `~/.bashrc`. If you already have Mise on PATH, substitute `mise` for `~/.local/bin/mise` below. Use a current release; the registry and backends ship with Mise.
-
-2. From this repository, inspect the plan, then install:
-
-   ```bash
-   ./mise/setup --dry-run
-   ./mise/setup
-   cd "$HOME"
-   ~/.local/bin/mise install
-   ~/.local/bin/mise exec -- nvim --version
-   ```
-
-   Setup copies the global manifest and session environment to `${MISE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/mise}/conf.d/`; it doesn't replace your main Mise config. Neither the checkout nor the current working directory is needed afterwards. Project configs can still select other versions. The complete Linux install uses several GiB.
-
-3. Add this **one line, once** to the end of `~/.bashrc` or `${ZDOTDIR:-$HOME}/.zshrc`, then open a new interactive shell:
-
-   ```sh
-   . "${XDG_CONFIG_HOME:-$HOME/.config}/home-env/shell.sh"
-   ```
-
-   It uses existing Mise activation or activates it, then loads aliases, history, completions, fzf, zoxide, direnv and fnox. Bash loads ble.sh last, only in an interactive terminal outside CI and coding agents (`BLE_DISABLE=1` opts out). Bash login profiles should source `~/.bashrc`. For scripts and editors not launched from an activated shell, use `mise exec -- <command>`.
-
-### Existing files and updates
-
-By default a different file or symlink stops setup **before it writes anything**. Use `--keep-existing` to skip conflicts, or `--backup` to move them to a sibling named `*.pre-home-mise` (numbered if needed) before installing. Both accept `--dry-run`. Setup won't write through symlinked directories. It never edits shell startup files.
-
-Claude, Codex and Pi settings are **seeded only when missing**, even with `--backup`. This preserves hooks, project trust, extra Pi packages and live TUI preferences. For an existing agent, merge the desired keys from `shared/claude/`, `shared/codex/` or `shared/pi/` yourself. Pi's Docker MCP gateway is account-specific: configure your OAuth-enabled endpoint under `mcpServers.gateway` in `~/.pi/agent/mcp.json` if you use it; setup does not write this file.
-
-Identical files are left untouched. To update, pull the repository and rerun setup with your conflict policy; run `mise install` from home for new tools. `mise upgrade` refreshes floating versions. Unlike the Nix lock, this profile doesn't pin every transitive dependency. To undo it, remove the files listed by setup, restore any backups and remove the shell source line. Do not delete your entire Mise data directory or agent state.
-
-## What runs where
-
-| Area | Mise profile |
-| --- | --- |
-| Development | Node 24, Python 3.13, Go, Bun, pnpm, uv, TypeScript, the lint/format CLIs, Dagu 2.27.0, KBTD, the Git tools, text/data/PDF and terminal utilities are in [config.toml](config.toml). Brain uses its own Python 3.14. pnpm/Node use the system's CA trust. |
-| Shell, Git and tmux | Bash history, Git/eza aliases, `lg` directory switching, fzf previews, the bat style, direnv and fnox hooks, and tmux pane bindings/clipboard/modified keys are configured. Git uses delta, difftastic, LFS, nvimdiff and gh's credential helper. A higher-priority `~/.gitconfig` or `~/.tmux.conf` can override the XDG configuration; keep, merge or move it intentionally. |
-| Neovim | Open `nvim` once with network access: its native package manager fetches eight pinned plugins. The theme, picker/keys, LSP, format-on-save, linting and EditorConfig are shared. Python and Node providers are installed. Run `mise run home-parsers` for the additional Tree-sitter parsers (Git, network, tar and a C compiler required). No Nix completion source, nil server or Nix-specific formatters. The TypeScript 6 fallback supplies tsserver when a project doesn't. |
-| Agents, secrets and GitHub | Log in to Doppler and authorize the `vault/prd` project before using fnox or the `pi`/`twg` commands. Each wrapper passes only its named Doppler secrets and the real tool path. TWG uses `~/.agents/skills`; Pi reads its extensions from the writable agent settings and may need npm access and provider login. `mise run home-github-auth` explicitly syncs personal/enterprise gh auth and the conditional work identity. No credentials are required to run setup. |
-| Brain and CNS | `mise run home-brain-hooks` installs or repairs Brain's own Claude, Codex and Pi hooks; approve Codex hooks in `/hooks` if prompted. For the watcher, run `brain service install` only on a host with user systemd. For CNS, `cns up --install` **starts** the daemon and installs a user service; do this from the configured home environment only on a machine you intend to pair. Its installer captures PATH; rerun it after moving the executable. On Linux add `Environment=NODE_USE_SYSTEM_CA=1 UV_SYSTEM_CERTS=true` under `[Service]` via `systemctl --user edit cns`, then restart it. Don't install a second service over a Home Manager unit. Pairing, login persistence and existing identities are host decisions. |
-| OS tools | Use the distribution for the native compiler and Make, pkg-config, Bash/completion, Git, less, curl, DNS utilities, file, GNU tar, lsof, OpenSSH, rsync, socat, tree, unzip, wget, xz, zip and zstd. Linux's bubblewrap, iproute2 and psmisc also belong to the host. These aren't silently installed with sudo. |
-| Nix only | Flakes, Home Manager generations, Cachix, nh, the `hm-*` commands, nix-direnv/devenv, nixfmt-tree, statix/deadnix and Nix build/inspection tools stay in the Nix app. Ordinary direnv still works. |
-
-For a Debian/Ubuntu host missing the OS portion, the corresponding package list is:
+From a directory **outside** this repository:
 
 ```sh
-sudo apt-get install bash bash-completion git python3 ca-certificates build-essential pkg-config less curl dnsutils file tar lsof openssh-client rsync socat tree unzip wget xz-utils zip zstd bubblewrap iproute2 psmisc
+mise bootstrap --from https://github.com/nothumancode/home.git \
+  --from-dir "$HOME/.dotfiles" --config-dir mise
 ```
 
-**Verification:** The profile was installed with stable Mise **2026.11.14** from the official Bash installer on x86-64 Linux. All 72 tool entries resolved in an isolated home without Nix on PATH. `mise/test` exercises global discovery outside the checkout, safe conflict handling, repeat setup, representative downloads, both shell integrations (Zsh when present), Git and tmux under a temporary HOME.
+Use your usual Git access to the private repository; an SSH URL also works. This is Mise's [global-config-from-a-subdirectory](https://mise.jdx.dev/bootstrap/from-repository.html#global-config-elsewhere) workflow: it keeps the monorepo at `~/.dotfiles`, links the global Mise config directory to its `mise/` subdirectory, deploys dotfiles, activates Bash and Zsh, installs tools, then runs the Brain hook integration. Keep that checkout in place. Tools, env, wrappers and tasks now work from **any directory**, without `-C` or a project-local trust prompt.
 
-For backend and configuration details, start at the [official Mise index](https://mise.jdx.dev/llms.txt): [registry](https://mise.jdx.dev/registry.html), [configuration hierarchy](https://mise.jdx.dev/configuration.html), [shell activation](https://mise.jdx.dev/shell-setup.html) and [tasks](https://mise.jdx.dev/tasks/).
+- **To preview first**, add `--dry-run`. With no checkout yet it previews *only the clone*. For a full preview, first run `git clone https://github.com/nothumancode/home.git ~/.dotfiles`, then run the command above with `--dry-run`. To try a PR before it lands, check out its branch in that clone.
+- **If Mise isn't installed**, follow the [official installer](https://mise.jdx.dev/installing-mise.html) and put `~/.local/bin` on PATH for the first command. The shell-neutral `https://mise.run` installer leaves activation to bootstrap. The [Bash installer](https://mise.run/bash) also works, but appends an unmarked `mise activate bash` line to `~/.bashrc`; remove that line before bootstrap to avoid activating twice. Leave your other startup code in place.
+- **To use it**, open a new interactive shell, or use `mise exec -- nvim` without shell activation. Mise manages only its activation block in each rc file. If your interactive Bash login profile doesn't source `~/.bashrc`, add that source line yourself.
+- **To check or update**, run `cd ~ && mise bootstrap status --missing` or `mise dot diff`. `mise bootstrap` reapplies the local checkout; `mise bootstrap --update` fast-forwards it first. `mise upgrade` updates floating tool versions. This is not a locked Home Manager generation.
+
+### Existing files
+
+Choose one owner per home directory. Mise refuses to link its global config over a nonempty `~/.config/mise`; back it up yourself and keep the settings you want before adopting this profile. A bootstrap is **not a transaction**: an earlier phase (including that config link) can finish before a later one stops.
+
+The `cli` dotfile group links individual files under `~/.config`, not entire application directories. At a managed target, an existing regular file blocks the link. Inspect it, merge or move it aside, then rerun. A foreign **symlink can be repointed without a prompt**: relinquish Home Manager ownership first, and inspect the plan rather than using `--force-dotfiles`. Links are live; edit their sources in the checkout.
+
+Git config and ignore rules are named blocks. Other lines stay intact; `~/.gitconfig` can override the XDG Git defaults. Claude, Codex, Pi, fnox, gh and lazygit use native structured **missing-key merges**. Existing values, trust records and hooks survive; new agent config files are private. Mise treats arrays as one value, so it seeds the default Pi extensions on a fresh machine but **does not append** to your existing package list. Review [the list](../shared/pi/settings.json) to opt into additional extensions.
+
+The declared targets use standard `~/.config`, `~/.claude`, `~/.codex`, `~/.pi/agent` and shell startup paths. The native target keys do not expand Tera or environment variables: changing `XDG_CONFIG_HOME`, `ZDOTDIR` or an agent's config directory does not relocate those entries. Adapt the declarations before applying on such hosts. The Git block itself renders the actual checkout and per-user enterprise include paths. No history watcher, tracked dotfiles, remote sync or secret-file templates are enabled.
+
+## Host-specific choices
+
+The base bootstrap never installs system packages, starts a service, fetches credentials or pairs a device. Select only what you need:
+
+| Environment | Preview / apply | Effect |
+| --- | --- | --- |
+| `debian` | `mise -E debian bootstrap packages apply --dry-run`; omit `--dry-run` to install. | apt supplies native build tools, shell completion, GNU/Unix tools, OpenSSH, DNS and Linux diagnostics listed in [config.debian.toml](config.debian.toml). Installing missing packages needs the host administrator. On other distributions provide equivalents. |
+| `services` | **After** the base install, `mise -E services bootstrap linux systemd-units apply --dry-run`; omit `--dry-run` on a host with user systemd to start them. | [Two user units](config.services.toml) launch the Brain watcher and CNS through the installed Mise executable. CNS binds port 47381 on all interfaces for paired devices and uses system CA settings. Enable this only on a host you intend to serve. |
+| `enterprise` | Set `GITHUB_ENTERPRISE_HOST` (hostname), `HOME_GIT_WORK_NAME` and `HOME_GIT_WORK_EMAIL` in your local environment. Inspect `mise -E enterprise dot diff`, then `mise -E enterprise dot apply`. | Tera renders local Git credential and identity includes for HTTPS/SSH remotes on that host. Other remotes retain your personal identity. Supply your work identity explicitly instead of inferring it by querying gh on every bootstrap. No token appears in the templates. |
+
+These are explicit `-E` selections, not permanent machine roles. Leaving out `-E` later doesn't undo deployed files or stop services. The generated units are **dev.mise.brain.service** and **dev.mise.cns.service**: manage those with `systemctl --user`, not with Brain's or CNS's service installer. Stop and disable competing units first. Use `mise bootstrap services remove brain` / `cns` to remove the Mise units. Review files and backups before removing dotfile entries; never delete an agent's whole mutable settings directory.
+
+## Daily use and exceptions
+
+- **Git and agents.** Log into Doppler and authorize `vault/prd` before launching Pi or TWG. Native command wrappers pass the corresponding allowlist and select the underlying binary from the home profile, not the current repository. `mise -C "$HOME" run home-github-auth` explicitly logs gh into github.com using Doppler; add `-E enterprise` to select the work host/token. You can use `gh auth login` instead. Brain's post-tools hook repairs its own agent integrations; approve new Codex hooks with `/hooks` if prompted. Pi's OAuth-enabled Docker MCP gateway and provider logins belong to the account: configure them locally, not in Git.
+- **Editor.** Neovim fetches eight pinned plugins on first launch. `mise run home-parsers` builds the additional Tree-sitter parsers (network, Git, tar and a C compiler). The color scheme, keys, format-on-save and linting use the shared Lua sources. Node and Python providers and LSPs are included. No Nix package completion, nil server or Nix formatters are configured.
+- **Shell and terminal.** Mise owns aliases, binary wrappers, PATH and activation. One shell dotfile handles the parts that must affect an interactive shell: history/shopt, `lg` changing directory, tool-supplied hooks and ble.sh keybindings. It runs once per shell; ble.sh skips non-TTY, CI and agent shells. tmux keeps the pane bindings, truecolor, clipboard and modified keys.
+- **What stays in Nix.** Home Manager generations/rollback, cache trust, Cachix, nh, the switch/check/fmt utilities, nix-direnv/devenv and Nix inspection/formatting tools. Ordinary direnv, fnox, Git LFS, Dagu, Brain, CNS, KBTD and TWG have non-Nix counterparts here.
+
+The [isolated integration test](../tests/mise.sh) bootstraps the actual committed profile, not a mock installer. For the native contracts, see the official [index](https://mise.jdx.dev/llms.txt), [bootstrap](https://mise.jdx.dev/bootstrap.html), [dotfiles](https://mise.jdx.dev/dotfiles.html), [environments](https://mise.jdx.dev/configuration/environments.html), [wrappers](https://mise.jdx.dev/dev-tools/shims.html#command-wrappers) and [Tera](https://mise.jdx.dev/templates.html).

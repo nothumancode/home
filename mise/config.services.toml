@@ -1,0 +1,14 @@
+[bootstrap.linux.systemd.units.brain]
+description = "Index local agent conversations"
+exec_start = '"{{ mise_bin }}" -C "%h" exec -- brain watch --interval 5'
+nice = 10
+restart = "always"
+restart_sec = "30"
+
+[bootstrap.linux.systemd.units.cns]
+description = "Cap'n Shell user daemon"
+exec_start_pre = ['"{{ mise_bin }}" -C "%h" exec -- cns identity']
+exec_start = '"{{ mise_bin }}" -C "%h" exec -- cns daemon --service --state "%h/.cns/daemon.json" --bind 0.0.0.0 --port 47381'
+restart = "on-failure"
+restart_sec = "5"
+environment = { PATH = "{{ env.HOME }}/.local/bin:/usr/local/bin:/usr/bin:/bin", NODE_USE_SYSTEM_CA = "1", UV_SYSTEM_CERTS = "true" }
