@@ -15,9 +15,9 @@
 	required = true
 [credential "https://github.com"]
 	helper =
-	helper = !gh auth git-credential
+	helper = {{ ("!" ~ (mise_bin | quote) ~ ' -C "$HOME" exec -- gh auth git-credential') | json_encode() }}
 [credential "https://gist.github.com"]
 	helper =
-	helper = !gh auth git-credential
+	helper = {{ ("!" ~ (mise_bin | quote) ~ ' -C "$HOME" exec -- gh auth git-credential') | json_encode() }}
 [include]
 	path = {{ (xdg_config_home ~ "/git/enterprise.gitconfig") | json_encode() }}

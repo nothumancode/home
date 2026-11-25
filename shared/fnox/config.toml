@@ -8,7 +8,3 @@ enabled = true
 type = "doppler"
 project = "vault"
 config = "prd"
-
-[secrets.GITHUB_ENTERPRISE_HOST]
-provider = "doppler"
-value = "GITHUB_ENTERPRISE_HOST"

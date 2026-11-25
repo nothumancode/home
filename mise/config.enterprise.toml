@@ -3,5 +3,6 @@ github_host = "{{ get_env(name='GITHUB_ENTERPRISE_HOST') }}"
 github_token_name = "GITHUB_ENTERPRISE_TOKEN"
 
 [dotfiles]
+"~/.config/fnox/config.toml/enterprise-host" = { source = "../shared/fnox/enterprise.toml", merge = "missing" }
 "~/.config/git/enterprise.gitconfig/home-enterprise" = { source = "templates/enterprise.gitconfig.tera", template = "tera", comment = "#" }
 "~/.config/git/enterprise-identity.gitconfig/home-identity" = { source = "templates/identity.gitconfig.tera", template = "tera", comment = "#" }

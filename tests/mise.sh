@@ -33,6 +33,8 @@ test "$(git config --get test.mine)" = intact
 test "$(git config --get diff.tool)" = difftastic
 grep -Fq "$checkout/shared/git/home.gitconfig" "$HOME/.config/git/config"
 grep -Fq "$HOME/.config/git/enterprise.gitconfig" "$HOME/.config/git/config"
+git config --get-all credential.https://github.com.helper | grep -Fq "$HOME/.local/bin/mise"
+if grep -q GITHUB_ENTERPRISE_HOST "$HOME/.config/fnox/config.toml"; then exit 1; fi
 jq -e '.theme == "personal" and .hooks.Stop == [] and (.hooks.SessionStart | length == 1)' "$HOME/.claude/settings.json" >/dev/null
 jq -e '.packages == ["local:my-extension"] and .defaultProvider == "openai"' "$HOME/.pi/agent/settings.json" >/dev/null
 grep -q 'model = "personal"' "$HOME/.codex/config.toml"
@@ -54,6 +56,7 @@ grep -Fq 'brain watch --interval 5' "$HOME/.config/systemd/user/dev.mise.brain.s
 grep -q 'daemon-reload' "$HOME/systemctl-requests"
 export GITHUB_ENTERPRISE_HOST=git.example.test HOME_GIT_WORK_NAME='Work Identity' HOME_GIT_WORK_EMAIL=dev@work.example
 mise -E enterprise dot apply --yes
+grep -q GITHUB_ENTERPRISE_HOST "$HOME/.config/fnox/config.toml"
 git init -q example && git -C example remote add origin https://git.example.test/team/repo
 test "$(git -C example config --get user.email)" = dev@work.example
 test "$(git config --get user.email)" != dev@work.example

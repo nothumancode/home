@@ -4,10 +4,10 @@
 {%- endif -%}
 [credential "https://{{ host }}"]
 	helper =
-	helper = !gh auth git-credential
+	helper = {{ ("!" ~ (mise_bin | quote) ~ ' -C "$HOME" exec -- gh auth git-credential') | json_encode() }}
 [credential "https://gist.{{ host }}"]
 	helper =
-	helper = !gh auth git-credential
+	helper = {{ ("!" ~ (mise_bin | quote) ~ ' -C "$HOME" exec -- gh auth git-credential') | json_encode() }}
 {% for remote in ["https://" ~ host ~ "/**", "https://*@" ~ host ~ "/**", "ssh://git@" ~ host ~ "/**", "git@" ~ host ~ ":*/**"] -%}
 [includeIf "hasconfig:remote.*.url:{{ remote }}"]
 	path = enterprise-identity.gitconfig

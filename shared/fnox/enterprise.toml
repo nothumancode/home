@@ -1,0 +1,3 @@
+[secrets.GITHUB_ENTERPRISE_HOST]
+provider = "doppler"
+value = "GITHUB_ENTERPRISE_HOST"
