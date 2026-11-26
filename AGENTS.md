@@ -1,4 +1,4 @@
-# Home Manager Configuration (`thehumanworks/home`)
+# Home Manager Configuration (`nothumancode/home`)
 
 Personal Nix flake managing Home Manager configurations across workstations and remote Linux hosts/sandboxes.
 
@@ -6,7 +6,7 @@ Personal Nix flake managing Home Manager configurations across workstations and 
 
 - `flake.nix` — Flake inputs (all following the root `nixpkgs`), one `pkgs` for `x86_64-linux`, shared `cachixConfig` and `unfreePackages` (plain data), the single `username` behind `homeConfigurations.rodat`, the repo formatter (`treefmt`), `apps.x86_64-linux.default` (`hm-remote-switch`), and `checks`.
 - `home.nix` — Core Home Manager configuration shared across machines (imports `modules/*`, renders the unfree allowlist to `~/.config/nixpkgs/config.nix`, `~/.config/nix/nix.conf` substituters, `targets.genericLinux`, nix-index/comma, `services.cns`).
-- `modules/` — Modular tool/shell/editor configs (`utilities.nix` defines `hm-switch`, `hm-check`, `hm-fmt`; `doppler.nix` holds the Doppler project/config and the `withDopplerSecrets` launcher helper).
+- `modules/` — Modular tool/shell/editor configs (`utilities.nix` defines `hm-switch`, `hm-check`, `hm-fmt`; `doppler.nix` holds the Doppler project/config and the `withDopplerSecrets` launcher helper; `neovim.nix` installs the editor's plugins and servers from nixpkgs and links `neovim/` (`init.lua`, `lua/home/*.lua`, `colors/vercel.lua`), checked headless by `neovim/test.lua`).
 - `.github/workflows/ci.yml` — Runs `nix flake check` and pushes built outputs to `thehuman` (not on pull requests). `update-flake-lock.yml` opens a weekly lock-update PR and dispatches CI on its branch. See [Updates and the cache](README.md#updates-and-the-cache).
 
 ## Commands
@@ -14,12 +14,11 @@ Personal Nix flake managing Home Manager configurations across workstations and 
 | Command | What it does |
 | --- | --- |
 | `hm-fmt` | Runs `nix fmt` in `~/.config/home-manager`: the flake's `treefmt` (`nixfmt`, `deadnix --edit`, `stylua`) over git-visible files. |
-| `hm-check` | Runs `nix fmt -- --ci`, `statix check`, and `actionlint` on the working tree, then `nix flake check` (style check, `remote-switch` + `shellcheck`, the `home` activation package). Passes extra flags (e.g. `-L`) to `nix flake check`. |
+| `hm-check` | Runs `nix fmt -- --ci`, `statix check`, and `actionlint` on the working tree, then `nix flake check` (style check, `remote-switch` + `shellcheck`, the `home` activation package, and `neovim`, which runs `modules/neovim/test.lua` in headless Neovim). Passes extra flags (e.g. `-L`) to `nix flake check`. |
 | `hm-check --lint` | Runs only the working-tree linters without invoking `nix flake check`. |
-| `hm-switch` | With a local `~/.config/home-manager` checkout: `nh home switch -b backup` on it (live build tree + built-in package diff). Without one: exports `GITHUB_TOKEN`/`GH_TOKEN`/`gh auth token` as a Nix access token and runs `nix run --refresh github:thehumanworks/home`. Supports `--push` (push the new generation to `thehuman` Cachix through `fnox exec`; skipped on dry runs) and forwards `nh` flags like `-n` (dry run), `-a` (ask), `-u`/`-U <input>` (update lockfile, checkout only). |
-| `nix run --refresh github:thehumanworks/home` | Remote bootstrap/update without a checkout: switches the current `$USER` to the fetched flake revision via `nh home switch` (flags after `--` go to `nh`, e.g. `-- -n` for a dry run). While the repo is private, prefix it with `NIX_CONFIG="access-tokens = github.com=$GITHUB_TOKEN"` on a machine without `hm-switch`; once it is public no token is needed. |
+| `hm-switch` | With a local `~/.config/home-manager` checkout: `nh home switch -b backup` on it (native Nix build output + built-in package diff; `NH_ROM=1` opts back into the live build tree). Without one: runs `nix run --refresh github:nothumancode/home`, passing `GITHUB_TOKEN`/`GH_TOKEN`/`gh auth token` as a Nix access token when there is one (only to avoid anonymous GitHub API rate limits; the repository is public). Supports `--push` (push the new generation to `thehuman` Cachix with `CACHIX_AUTH_TOKEN` from Doppler; skipped on dry runs) and forwards `nh` flags like `-n` (dry run), `-a` (ask), `-u`/`-U <input>` (update lockfile, checkout only). |
+| `nix run --refresh github:nothumancode/home` | Remote bootstrap/update without a checkout: switches the current `$USER` to the fetched flake revision via `nh home switch` (flags after `--` go to `nh`, e.g. `-- -n` for a dry run). Needs no token; with Doppler access (`doppler login` or `DOPPLER_TOKEN`) activation also logs `gh` in (see [Secrets](README.md#secrets)). |
 | `home-manager switch --flake <ref>` / `nh home switch <ref>` | Also work bare, with no wrapper and no `--impure`: both select `homeConfigurations.$USER`. |
-| `modal-sandbox [rev] [--app name] [--timeout s]` | Builds (or reuses) a Modal image with this configuration activated at `rev` (default: remote `main`, pinned to its commit) and prints the ID of a new sandbox in the Modal app `human-nix`. `--with-git-repo <url> [--with-git-branch <branch>]` also clones that repository into `/root/<name>`. Defined in `modules/modal.nix`; see [Modal](README.md#modal). |
 | `nix fmt` | The repo formatter (`nixfmt-tree` extended with `deadnix` and `stylua`); `nix fmt -- --ci` fails on unformatted files. |
 | `nix flake check` | Runs all flake checks directly (useful before `hm-check` is activated). |
 
@@ -44,7 +43,7 @@ Personal Nix flake managing Home Manager configurations across workstations and 
   sudo systemctl restart nix-daemon
   ```
 - **Agent hooks are not declared in Nix:** a list declared in `programs.claude-code.settings` (or `programs.codex.hooks`) replaces the one in the agent's mutable settings file on every switch, wiping hooks other tools added. So `modules/brain.nix` leaves `programs.brain.enable*Integration` off and runs `brain install --quiet --claude --codex --pi` at activation instead; it only touches brain's own entries and writes nothing when they are current. Do not add `--service` (the watcher is the module's systemd unit; a second, hand-installed unit makes activation fail).
-- **Credentials never reach the shell hook:** fnox secrets that grant access (Cachix, Modal) use `env = "exec"` in `modules/fnox.nix`, so they exist only inside `fnox exec -- <command>` or `fnox get`. Launchers that need provider secrets (Pi, twg) use `withDopplerSecrets` with an explicit `secrets` list; do not route them through `fnox exec`, which would hand them every exec secret.
-- **No network calls in activation:** activation runs on every switch, in Modal image builds, and offline. Login syncs (GitHub auth) are user services (`setup-github-auth`); sandboxes without a user manager simply skip them.
+- **Secrets come from Doppler per command, never from the shell:** nothing exports secrets into interactive shells (no fnox, no shell hook). Commands that need credentials (Pi, twg, `modal`, `hm-switch --push`) are `withDopplerSecrets` launchers with an explicit `secrets` list. Doppler auth is the user's choice (`doppler login` or `DOPPLER_TOKEN`); do not require either one.
+- **Activation must work without network or Doppler:** activation runs on every switch, in sandbox image builds, and offline. Its only network step is GitHub login (`home.activation.setupGithubAuth` in `modules/gh.nix`): one `doppler run --only-secrets` call (single attempt, no fallback file) for `GH_TOKEN`, `GITHUB_ENTERPRISE_HOST` and `GITHUB_ENTERPRISE_TOKEN`. When Doppler is not logged in or unreachable it warns and keeps the stored logins; it never fails the switch. There is no login daemon.
 - **Project toolchains are not global:** compilers and package managers (Go, gcc/make/pkg-config, pnpm, bun, TypeScript, pinned Pythons) come from each project's own environment (`devenv.nix` or the project flake). Run one-off tools with `, <command>` (comma). Only `nodejs_24` and `python3` stay global, for agents and scripts.
 - **`nh` and store paths:** `hm-remote-switch` passes `path:${self}`; a bare `/nix/store/...` argument makes `nh` treat it as a pre-built result instead of a flake.

@@ -1,6 +1,28 @@
 {
+  pkgs,
+  ...
+}:
+
+let
+  claudeCodeWrapped = pkgs.writeShellApplication {
+    name = "claude";
+    runtimeInputs = [
+      pkgs.claude-code
+      pkgs.doppler
+    ];
+    text = ''
+      if [[ -n "''${DOPPLER_TOKEN:-}" || -n "$(doppler configure get token --plain)" ]]; then
+        exec doppler run -p agents -c claude-code -- claude "$@"
+      fi
+      exec claude "$@"
+    '';
+  };
+in
+{
   programs.claude-code = {
     enable = true;
+    package = claudeCodeWrapped;
+    enableMcpIntegration = true;
     mutableSettings = true;
     settings = {
       env = {

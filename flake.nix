@@ -53,7 +53,7 @@
       # The only system with a Home Manager configuration. Add outputs for another
       # system only together with a configuration that builds there.
       system = "x86_64-linux";
-      remoteFlake = "github:thehumanworks/home";
+      remoteFlake = "github:nothumancode/home";
       cachixConfig = {
         substituters = [
           "https://thehuman.cachix.org"
@@ -127,6 +127,8 @@
           fi
           export NIX_CONFIG="''${NIX_CONFIG:-}"$'\n'"$caches"
 
+          # Match hm-switch: native Nix progress unless the caller opts into rom.
+          export NH_ROM="''${NH_ROM:-0}"
           exec nh home switch -b backup "path:${self}" "$@"
         '';
       };
@@ -178,6 +180,31 @@
             '';
         remote-switch = hmRemoteSwitch;
         home = self.homeConfigurations.${username}.activationPackage;
+        # Starts the generated Neovim configuration headless and runs modules/neovim/test.lua.
+        neovim =
+          let
+            hm = self.homeConfigurations.${username}.config;
+          in
+          pkgs.runCommand "neovim"
+            {
+              nativeBuildInputs = [
+                hm.programs.neovim.finalPackage
+                pkgs.git
+              ];
+            }
+            ''
+              export HOME="$TMPDIR/home" XDG_CONFIG_HOME=${hm.home-files}/.config
+              export XDG_DATA_HOME="$TMPDIR/data" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"
+              mkdir -p "$HOME" "$XDG_DATA_HOME/nvim"
+              ln -s ${hm.home-files}/.local/share/nvim/site "$XDG_DATA_HOME/nvim/site"
+              export NVIM_TEST_PROJECT="$TMPDIR/project"
+              git init -q "$NVIM_TEST_PROJECT"
+              cd "$NVIM_TEST_PROJECT"
+              nvim --headless -c 'lua vim.schedule(function() local ok, err = xpcall(dofile, debug.traceback, "${./modules/neovim/test.lua}"); if not ok then io.stderr:write(err .. "\n") end; vim.cmd(ok and "qa!" or "cquit 1") end)'
+              # The light theme chosen by the test must survive a restart.
+              nvim --headless -c 'lua if vim.o.background ~= "light" or vim.api.nvim_get_hl(0, { name = "Normal" }).bg ~= 0xffffff then vim.cmd("cquit 1") end' -c 'qa!'
+              touch "$out"
+            '';
       };
 
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {

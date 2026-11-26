@@ -36,13 +36,13 @@ let
       linters = [ "shellcheck" ];
     }
     {
+      # Neovim runs both as language servers: ty for types and navigation, Ruff for lint and fixes.
       filetypes = [ "python" ];
       packages = [
         ruff
         ty
       ];
       formatter = "ruff_format";
-      linters = [ "ruff" ];
     }
     {
       filetypes = [ "lua" ];

@@ -11,14 +11,14 @@
     withNodeJs = false;
     withPython3 = false;
 
-    # Language servers live only on Neovim's PATH; formatters and linters come from
-    # modules/dev-tools.nix, and fd/ripgrep/git are global.
+    # Language servers live only on Neovim's PATH; formatters, linters and the Python
+    # servers (ty, ruff) come from modules/dev-tools.nix, and fd/ripgrep/git are global.
     extraPackages = with pkgs; [
       bash-language-server
       gopls
       lua-language-server
+      marksman
       nil
-      pyright
       typescript # tsserver for typescript-language-server
       typescript-language-server
       vscode-langservers-extracted
@@ -32,6 +32,9 @@
       mini-nvim
       nvim-lint
       nvim-lspconfig
+      nvim-treesitter-context
+      nvim-treesitter-textobjects # queries for mini.ai's function/class/block text objects
+      SchemaStore-nvim
       which-key-nvim
       (nvim-treesitter.withPlugins (
         p: with p; [
@@ -75,9 +78,13 @@
     initLua = builtins.readFile ./neovim/init.lua;
   };
 
-  xdg.configFile."nvim/colors/vercel.lua".source = ./neovim/colors/vercel.lua;
-  xdg.configFile."nvim/lua/nixpkgs_completion.lua".text = ''
-    local packages = 'path:${inputs.nixpkgs}#legacyPackages.${pkgs.stdenv.hostPlatform.system}'
-  ''
-  + builtins.readFile ./neovim/nixpkgs_completion.lua;
+  xdg.configFile = {
+    "nvim/colors/vercel.lua".source = ./neovim/colors/vercel.lua;
+    # theme, editor, languages, terminals and :checkhealth home, required by init.lua.
+    "nvim/lua/home".source = ./neovim/lua/home;
+    "nvim/lua/nixpkgs_completion.lua".text = ''
+      local packages = 'path:${inputs.nixpkgs}#legacyPackages.${pkgs.stdenv.hostPlatform.system}'
+    ''
+    + builtins.readFile ./neovim/nixpkgs_completion.lua;
+  };
 }

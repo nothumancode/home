@@ -47,7 +47,7 @@
       gl = "git log --oneline --graph --decorate -20";
     };
 
-    # Load ble.sh after prompt hooks (fnox, direnv, zoxide) so it wraps them cleanly,
+    # Load ble.sh after prompt hooks (direnv, zoxide) so it wraps them cleanly,
     # and skip it in non-TTY, dumb, CI, or AI-agent shells.
     initExtra = lib.mkOrder 2500 ''
       if [[ -t 0 && -t 1 && ''${TERM:-dumb} != dumb && -z ''${BLE_DISABLE:-} && -z ''${CI:-} && -z ''${PI_CODING_AGENT:-}''${CODEX_SANDBOX:-}''${CLAUDECODE:-} ]]; then

@@ -3,12 +3,27 @@
   lib,
   pkgs,
   remoteFlake,
+  withDopplerSecrets,
   ...
 }:
 
 let
   localFlakeDir = "${config.xdg.configHome}/home-manager";
-  fnoxBin = lib.getExe' config.programs.fnox.package "fnox";
+
+  # Commands that need credentials get only their own secrets from Doppler.
+  cachixWithToken = withDopplerSecrets {
+    name = "cachix-with-token";
+    program = lib.getExe pkgs.cachix;
+    secrets = [ "CACHIX_AUTH_TOKEN" ];
+  };
+  modalWithToken = withDopplerSecrets {
+    name = "modal";
+    program = lib.getExe pkgs.modal;
+    secrets = [
+      "MODAL_TOKEN_ID"
+      "MODAL_TOKEN_SECRET"
+    ];
+  };
 
   # Runs a command in the local checkout, or explains that there is none.
   inCheckout = name: ''
@@ -39,11 +54,12 @@ let
       done
 
       if [[ -f ${lib.escapeShellArg "${localFlakeDir}/flake.nix"} ]]; then
-        ${lib.getExe config.programs.nh.package} home switch -b backup ${lib.escapeShellArg localFlakeDir} "''${args[@]}"
+        # rom in nh 4.5 warns on Determinate Nix activity 10113. Use native progress by default.
+        NH_ROM="''${NH_ROM:-0}" ${lib.getExe config.programs.nh.package} home switch -b backup ${lib.escapeShellArg localFlakeDir} "''${args[@]}"
       else
         # No checkout: run the flake's own switch app at the latest remote revision.
-        # A GitHub token is required while the flake repo is private, and avoids
-        # anonymous API rate limits once it is public.
+        # The repository is public; a token, when there is one, only avoids anonymous
+        # GitHub API rate limits.
         token="''${GITHUB_TOKEN:-''${GH_TOKEN:-$(gh auth token 2>/dev/null || true)}}"
         if [[ -n "$token" ]]; then
           export NIX_CONFIG="''${NIX_CONFIG:-}"$'\n'"extra-access-tokens = github.com=$token"
@@ -53,8 +69,7 @@ let
 
       if [[ "$push" == true && "$dry_run" == false ]]; then
         profile="''${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager"
-        # The push token only exists inside `fnox exec` (modules/fnox.nix).
-        ${fnoxBin} exec -- ${lib.getExe pkgs.cachix} push thehuman "$(readlink -f "$profile")"
+        ${lib.getExe cachixWithToken} push thehuman "$(readlink -f "$profile")"
       fi
     '';
   };
@@ -185,6 +200,9 @@ in
     nix-tree
     nvd
     sops
+
+    # Modal CLI with its token from Doppler
+    modalWithToken
 
     # Terminal, network, archive, and diagnostic utilities
     btop

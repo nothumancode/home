@@ -30,11 +30,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795551705,
-        "narHash": "sha256-BvEPm55rli/sLMHuFdZ3vVNsHNEe77GyF7C0mv6DZ0A=",
+        "lastModified": 1795705424,
+        "narHash": "sha256-SneyqwRgKrYBmSNKOnCRhqrs65pu3WNPAZmtVnmUDvw=",
         "owner": "thehumanworks",
         "repo": "capnshell",
-        "rev": "80fdd82b28d5f74515ce33c9c8de622b2329f594",
+        "rev": "c87fb8c982640efa9481ed826f29e1fac59085b3",
         "type": "github"
       },
       "original": {
@@ -70,11 +70,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795659104,
-        "narHash": "sha256-btgrVfT6CI01JLg5G/GIYyBG0gbvsV7OKyXeYA77TLs=",
+        "lastModified": 1795718612,
+        "narHash": "sha256-qB9GmhnsOcx1RHnljlv9Z8sdx5PHcSBXYu2bVoyZrvE=",
         "owner": "thehumanworks",
         "repo": "kbtd",
-        "rev": "e0c37cb6ba05227e25e6dec2f0856cf7d5407d1b",
+        "rev": "2746464c6c11e7e650a5f58d617959da7aa6b507",
         "type": "github"
       },
       "original": {

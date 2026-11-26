@@ -83,7 +83,7 @@ in
         "vercel-ai-gateway/google/gemini-4-hydrogen"
       ];
       modelThinkingLevels = {
-        "openai/gpt-6.2-sol" = "max";
+        "openai/gpt-6.2-sol" = "xhigh";
         "vercel-ai-gateway/google/gemini-4-neon" = "high";
       };
       enableInstallTelemetry = false;
@@ -145,6 +145,12 @@ in
         type = "http";
         description = "Gateway for multiple MCP server tools.";
         oauth.scope = "openid offline_access";
+      };
+      wit = {
+        type = "stdio";
+        command = "wit";
+        args = [ "mcp" ];
+        description = "Run POSIX-like commands to explore remote github repos.";
       };
       cns = {
         type = "stdio";
