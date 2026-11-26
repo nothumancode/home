@@ -24,7 +24,6 @@
     ./modules/fnox.nix
     ./modules/gh.nix
     ./modules/git.nix
-    ./modules/modal.nix
     ./modules/neovim.nix
     ./modules/nh.nix
     ./modules/pi-coding-agent.nix
