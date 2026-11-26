@@ -11,13 +11,9 @@ let
 
   piWrapper = withDopplerSecrets {
     name = "pi";
+    project = "agents";
+    config = "pi";
     program = lib.getExe pkgs.pi-coding-agent;
-    secrets = [
-      "LOGGLY_API_TOKEN"
-      "LOGGLY_SUBDOMAIN"
-      "EXA_API_KEY"
-      "AI_GATEWAY_API_KEY"
-    ];
   };
   openTuiDefaults = jsonFormat.generate "pi-open-tui.json" {
     enabled = true;

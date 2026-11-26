@@ -28,8 +28,8 @@ The files land in the real home, so later shells need no special environment.
 Use the same command to update a running sandbox.
 
 To log `gh` in during that activation, give it Doppler access
-([Secrets](#secrets)), for example a `DOPPLER_TOKEN` service token for
-`vault`/`prd` through the platform's secret mechanism. Leave it out of image
+([Secrets](#secrets)), for example a `DOPPLER_TOKEN` through the platform's
+secret mechanism. Leave it out of image
 builds: headless `gh` keeps its token in plain text in `~/.config/gh/hosts.yml`,
 so the image would carry it. Give the running sandbox `DOPPLER_TOKEN` and rerun
 the switch there, or give it `GH_TOKEN`, which `gh` and its git credential
@@ -98,22 +98,38 @@ checkout).
 
 ## Secrets
 
-Every secret comes from Doppler (`vault`/`prd`, set once in
-`modules/doppler.nix`), through the `doppler` CLI with whatever auth you give
-it: `doppler login`, or a `DOPPLER_TOKEN` in the environment. Nothing exports
-secrets into the shell. Commands that need credentials get only their own
-through `doppler run --only-secrets`: Pi, twg, `modal` (Modal token) and
-`hm-switch --push` (Cachix token). For a one-off command, do the same:
-`doppler run --only-secrets CACHIX_AUTH_TOKEN -- cachix push thehuman <path>`.
+Every secret comes from Doppler, through the `doppler` CLI with whatever auth
+you give it: `doppler login`, or a `DOPPLER_TOKEN` in the environment. Nothing
+exports secrets into the shell. Each command that needs credentials is a
+launcher for its own Doppler config, and gets all of that config's secrets:
 
-GitHub logins happen at activation. Each switch reads these Doppler secrets and
-stores the tokens in `gh`'s own credential store:
-
-| Doppler secrets | Effect |
+| Command | Doppler project/config |
 | --- | --- |
-| `GH_TOKEN` | logs in to `github.com` |
-| `GITHUB_ENTERPRISE_HOST` + `GITHUB_ENTERPRISE_TOKEN` | logs in to the enterprise host and writes its git credential helper and work identity (`~/.config/git/enterprise*.gitconfig`) |
-| `GITHUB_ENTERPRISE_HOST` alone | writes the git config for a host you already logged in to by hand |
+| `claude` | `agents`/`claude-code` |
+| `pi` | `agents`/`pi` |
+| `twg` | `tools`/`atlassian` |
+| `modal` | `tools`/`modal` |
+| `hm-switch --push` (`cachix push`) | `tools`/`nix` |
+
+Without Doppler auth a launcher starts the command without secrets, so a login
+the tool stored itself still works. A bare `doppler run` or `doppler secrets`
+uses `global`/`lf` (set in `modules/doppler.nix`), for example
+`doppler run -- cachix push thehuman <path>`. With a service account token,
+give the account read access to every project above.
+
+GitHub logins happen at activation. Each switch reads one Doppler config per
+host and stores the tokens in `gh`'s own credential store, so `gh` and git need
+no Doppler afterwards. Both configs use `gh`'s own names, so
+`doppler run -p tools -c ghe -- gh ...` also works on its own. Keep them out of
+`global`/`lf`: both define `GH_TOKEN`, and `gh` uses that one variable for
+`github.com` and `*.ghe.com` alike, ahead of the stored logins.
+
+| Doppler config | Secrets | Effect |
+| --- | --- | --- |
+| `tools`/`gh` | `GH_TOKEN` (+ `GH_HOST`, default `github.com`) | logs in to `github.com` |
+| `tools`/`ghe` | `GH_HOST` + `GH_TOKEN` | logs in to the enterprise host and writes its git credential helper (`~/.config/git/enterprise.gitconfig`) |
+| `tools`/`ghe` | `GH_HOST` alone | writes the git config for a host you already logged in to by hand |
+| `tools`/`ghe` | `GIT_USER_NAME`, `GIT_USER_EMAIL` | the git identity for repositories on the enterprise host (`~/.config/git/enterprise-identity.gitconfig`) |
 
 If Doppler is not logged in or not reachable, the switch goes on with the logins
 it already has and prints how to fix it. A fresh machine or sandbox therefore
@@ -123,7 +139,8 @@ needs only Doppler access for its first activation:
 read -rs DOPPLER_TOKEN; export DOPPLER_TOKEN; nix run github:nothumancode/home
 ```
 
-Over SSH, send a service token for `vault`/`prd` (not your personal CLI token)
+Over SSH, send a service account token that can read `tools`/`gh` and
+`tools`/`ghe` (not your personal CLI token; a service token reaches only one config)
 on stdin, to keep it out of shell history and the process list:
 
 ```sh

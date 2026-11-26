@@ -10,19 +10,18 @@
 let
   localFlakeDir = "${config.xdg.configHome}/home-manager";
 
-  # Commands that need credentials get only their own secrets from Doppler.
+  # Commands that need credentials get their own Doppler config.
   cachixWithToken = withDopplerSecrets {
     name = "cachix-with-token";
+    project = "tools";
+    config = "nix";
     program = lib.getExe pkgs.cachix;
-    secrets = [ "CACHIX_AUTH_TOKEN" ];
   };
   modalWithToken = withDopplerSecrets {
     name = "modal";
+    project = "tools";
+    config = "modal";
     program = lib.getExe pkgs.modal;
-    secrets = [
-      "MODAL_TOKEN_ID"
-      "MODAL_TOKEN_SECRET"
-    ];
   };
 
   # Runs a command in the local checkout, or explains that there is none.

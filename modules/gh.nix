@@ -7,17 +7,18 @@
 
 let
   ghBin = lib.getExe config.programs.gh.package;
-  inherit (config.doppler) project;
-  dopplerConfig = config.doppler.config;
+  doppler = lib.getExe pkgs.doppler;
 
-  # Logs gh in from the Doppler secrets GH_TOKEN (github.com) and GITHUB_ENTERPRISE_HOST +
-  # GITHUB_ENTERPRISE_TOKEN, with whatever Doppler auth the user has (`doppler login`
-  # or DOPPLER_TOKEN). Without Doppler it warns and leaves the stored logins alone.
+  # Logs gh in from two Doppler configs, one per host, each holding gh's own names:
+  # tools/gh (github.com) and tools/ghe (GitHub Enterprise, with its git credential
+  # helper and the work identity from GIT_USER_*). Uses whatever Doppler auth the user
+  # has (`doppler login` or DOPPLER_TOKEN); without it, it warns and changes nothing.
   setupGithubAuth = pkgs.writeShellApplication {
     name = "setup-github-auth";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.jq
+      config.programs.git.package
     ];
     text = ''
       export GH_CONFIG_DIR=${lib.escapeShellArg "${config.xdg.configHome}/gh"}
@@ -52,8 +53,7 @@ let
         gh_clean auth token --hostname "$1" >/dev/null 2>&1
       }
 
-      # Sets token_changed=1 when it stores a new token; fails when gh rejects it.
-      token_changed=0
+      # Fails when gh rejects the token.
       login() {
         local host="$1" token="$2"
         if [[ "$(gh_clean auth token --hostname "$host" 2>/dev/null || true)" == "$token" ]]; then
@@ -66,41 +66,53 @@ let
           return 1
         fi
         echo "setup-github-auth: logged in to $host"
-        token_changed=1
       }
 
-      # Only Doppler's values count, not copies already in the switch environment. One
-      # attempt and no fallback file: offline, the switch moves on quickly and no extra
-      # copy of the secrets lands on disk.
-      unset GH_TOKEN GITHUB_ENTERPRISE_HOST GITHUB_ENTERPRISE_TOKEN
-      if ! secrets=$(${lib.getExe pkgs.doppler} run \
-        --project ${lib.escapeShellArg project} --config ${lib.escapeShellArg dopplerConfig} \
-        --no-fallback --no-check-version --attempts 1 \
-        --only-secrets GH_TOKEN --only-secrets GITHUB_ENTERPRISE_HOST --only-secrets GITHUB_ENTERPRISE_TOKEN \
-        --no-exit-on-missing-only-secrets \
-        -- jq -n 'env | {GH_TOKEN, GITHUB_ENTERPRISE_HOST, GITHUB_ENTERPRISE_TOKEN}'); then
-        warn "could not read the GitHub secrets from Doppler (${project}/${dopplerConfig}); GitHub logins are unchanged." \
+      if [[ -z "''${DOPPLER_TOKEN:-}" && -z "$(${doppler} configure get token --plain 2>/dev/null)" ]]; then
+        warn "no Doppler login; GitHub logins are unchanged." \
           "Log in with 'doppler login' or set DOPPLER_TOKEN, then rerun the switch."
         exit 0
       fi
-      secret() {
-        printf '%s' "$secrets" | jq -r --arg name "$1" '.[$name] // empty'
+
+      # Prints one config's GH_HOST, GH_TOKEN and GIT_USER_* as JSON. Only Doppler's
+      # values count, not copies already in the switch environment. One attempt and no
+      # fallback file: offline, the switch moves on quickly and no extra copy of the
+      # secrets lands on disk.
+      unset GH_HOST GH_TOKEN GIT_USER_NAME GIT_USER_EMAIL
+      read_config() {
+        if ! ${doppler} run --project tools --config "$1" \
+          --no-fallback --no-check-version --attempts 1 \
+          --only-secrets GH_HOST --only-secrets GH_TOKEN \
+          --only-secrets GIT_USER_NAME --only-secrets GIT_USER_EMAIL \
+          --no-exit-on-missing-only-secrets \
+          -- jq -n 'env | {GH_HOST, GH_TOKEN, GIT_USER_NAME, GIT_USER_EMAIL}'; then
+          warn "could not read tools/$1 from Doppler; its GitHub login is unchanged."
+          return 1
+        fi
+      }
+      field() {
+        jq -r --arg name "$2" '.[$name] // empty' <<<"$1"
       }
 
-      token=$(secret GH_TOKEN)
-      if [[ -n "$token" ]]; then
-        login github.com "$token" || true
-      elif ! logged_in github.com; then
-        warn "github.com has no login, and Doppler has no GH_TOKEN." \
-          "Add GH_TOKEN to Doppler and rerun the switch, or log in by hand:" \
-          "  gh auth login --hostname github.com --git-protocol https"
+      if secrets=$(read_config gh); then
+        host=$(strip_host "$(field "$secrets" GH_HOST)")
+        host="''${host:-github.com}"
+        token=$(field "$secrets" GH_TOKEN)
+        if [[ -n "$token" ]]; then
+          login "$host" "$token" || true
+        elif ! logged_in "$host"; then
+          warn "$host has no login, and tools/gh has no GH_TOKEN." \
+            "Add GH_TOKEN to tools/gh and rerun the switch, or log in by hand:" \
+            "  gh auth login --hostname $host --git-protocol https"
+        fi
       fi
 
-      host=$(strip_host "$(secret GITHUB_ENTERPRISE_HOST)")
-      token=$(secret GITHUB_ENTERPRISE_TOKEN)
+      secrets=$(read_config ghe) || exit 0
+      host=$(strip_host "$(field "$secrets" GH_HOST)")
+      token=$(field "$secrets" GH_TOKEN)
       if [[ -z "$host" ]]; then
         if [[ -n "$token" ]]; then
-          warn "Doppler has GITHUB_ENTERPRISE_TOKEN but no GITHUB_ENTERPRISE_HOST; skipping GitHub Enterprise."
+          warn "tools/ghe has GH_TOKEN but no GH_HOST; skipping GitHub Enterprise."
         fi
         exit 0
       fi
@@ -108,37 +120,27 @@ let
       if [[ -n "$token" ]]; then
         login "$host" "$token" || exit 0
       elif ! logged_in "$host"; then
-        warn "$host has no login, and Doppler has no GITHUB_ENTERPRISE_TOKEN." \
-          "Add GITHUB_ENTERPRISE_TOKEN to Doppler and rerun the switch, or log in by hand:" \
+        warn "$host has no login, and tools/ghe has no GH_TOKEN." \
+          "Add GH_TOKEN to tools/ghe and rerun the switch, or log in by hand:" \
           "  gh auth login --hostname $host --git-protocol https"
         exit 0
       fi
 
       mkdir -p "$git_config_dir"
 
-      # The work identity comes from the enterprise account; it is fetched again only
-      # when the token changes or the file is missing.
-      if [[ "$token_changed" -eq 1 || ! -s "$enterprise_identity_config" ]]; then
-        if user_json=$(gh_clean api --hostname "$host" user 2>/dev/null); then
-          name=$(jq -r '.name // empty' <<<"$user_json")
-          email=$(jq -r '.email // empty' <<<"$user_json")
-          if [[ -z "$email" ]]; then
-            email=$(gh_clean api --hostname "$host" user/emails --jq '.[] | select(.primary) | .email' 2>/dev/null || true)
-          fi
-          email="''${email,,}"
-          if [[ -n "$name" || -n "$email" ]]; then
-            tmp=$(mktemp "$git_config_dir/.enterprise-identity.XXXXXX")
-            {
-              echo "[user]"
-              [[ -z "$name" ]] || printf '\tname = %s\n' "$name"
-              [[ -z "$email" ]] || printf '\temail = %s\n' "$email"
-            } >"$tmp"
-            chmod 600 "$tmp"
-            mv "$tmp" "$enterprise_identity_config"
-          fi
-        else
-          warn "could not read your $host profile; git keeps the default identity there."
-        fi
+      # The work identity for repositories on the enterprise host. git config writes the
+      # values with the quoting they need.
+      name=$(field "$secrets" GIT_USER_NAME)
+      email=$(field "$secrets" GIT_USER_EMAIL)
+      if [[ -n "$name" || -n "$email" ]]; then
+        tmp=$(mktemp "$git_config_dir/.enterprise-identity.XXXXXX")
+        [[ -z "$name" ]] || git config --file "$tmp" user.name "$name"
+        [[ -z "$email" ]] || git config --file "$tmp" user.email "''${email,,}"
+        chmod 600 "$tmp"
+        mv "$tmp" "$enterprise_identity_config"
+      elif [[ ! -s "$enterprise_identity_config" ]]; then
+        warn "tools/ghe has no GIT_USER_NAME or GIT_USER_EMAIL;" \
+          "commits in $host repositories use the default identity."
       fi
 
       tmp=$(mktemp "$git_config_dir/.enterprise.XXXXXX")
@@ -194,7 +196,7 @@ in
     };
   };
 
-  # One Doppler call per switch (none on dry runs); it never fails the switch.
+  # Two Doppler calls per switch (none on dry runs); it never fails the switch.
   home.activation.setupGithubAuth = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     run ${lib.getExe setupGithubAuth} || warnEcho "GitHub login setup failed; the switch continues without it."
   '';

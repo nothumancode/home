@@ -1,21 +1,16 @@
 {
+  lib,
   pkgs,
+  withDopplerSecrets,
   ...
 }:
 
 let
-  claudeCodeWrapped = pkgs.writeShellApplication {
+  claudeCodeWrapped = withDopplerSecrets {
     name = "claude";
-    runtimeInputs = [
-      pkgs.claude-code
-      pkgs.doppler
-    ];
-    text = ''
-      if [[ -n "''${DOPPLER_TOKEN:-}" || -n "$(doppler configure get token --plain)" ]]; then
-        exec doppler run -p agents -c claude-code -- claude "$@"
-      fi
-      exec claude "$@"
-    '';
+    project = "agents";
+    config = "claude-code";
+    program = lib.getExe pkgs.claude-code;
   };
 in
 {
