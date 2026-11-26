@@ -42,8 +42,8 @@ let
         ${lib.getExe config.programs.nh.package} home switch -b backup ${lib.escapeShellArg localFlakeDir} "''${args[@]}"
       else
         # No checkout: run the flake's own switch app at the latest remote revision.
-        # A GitHub token is required while the flake repo is private, and avoids
-        # anonymous API rate limits once it is public.
+        # The repository is public; a token, when there is one, only avoids anonymous
+        # GitHub API rate limits.
         token="''${GITHUB_TOKEN:-''${GH_TOKEN:-$(gh auth token 2>/dev/null || true)}}"
         if [[ -n "$token" ]]; then
           export NIX_CONFIG="''${NIX_CONFIG:-}"$'\n'"extra-access-tokens = github.com=$token"
@@ -185,6 +185,9 @@ in
     nix-tree
     nvd
     sops
+
+    # Modal CLI; its credentials come through `fnox exec -- modal ...`
+    modal
 
     # Terminal, network, archive, and diagnostic utilities
     btop

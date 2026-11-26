@@ -25,7 +25,8 @@ in
         CACHIX_AUTH_TOKEN = credential "CACHIX_AUTH_TOKEN";
         MODAL_TOKEN_ID = credential "MODAL_TOKEN_ID";
         MODAL_TOKEN_SECRET = credential "MODAL_TOKEN_SECRET";
-        # A host name, not a credential; setup-github-auth reads it from the shell first.
+        # A host name, not a credential, exported for interactive use; GitHub login setup
+        # reads GH_ENTERPRISE_HOST instead, and only from the switch environment.
         GITHUB_ENTERPRISE_HOST = {
           provider = "doppler";
           value = "GITHUB_ENTERPRISE_HOST";

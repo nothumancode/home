@@ -53,7 +53,7 @@
       # The only system with a Home Manager configuration. Add outputs for another
       # system only together with a configuration that builds there.
       system = "x86_64-linux";
-      remoteFlake = "github:thehumanworks/home";
+      remoteFlake = "github:nothumancode/home";
       cachixConfig = {
         substituters = [
           "https://thehuman.cachix.org"
