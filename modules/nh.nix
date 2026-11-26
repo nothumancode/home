@@ -8,11 +8,14 @@
     enable = true;
     homeFlake = "${config.xdg.configHome}/home-manager";
 
-    # Weekly `nh clean user`: keeps the newest 10 generations and anything from the last
-    # two weeks, so rollback targets stay while old closures become collectable.
+    # Daily `nh clean user` (a missed run catches up at the next start: the timer is
+    # Persistent). Rollback stays possible to the newest 10 generations whatever their
+    # age, and to anything from the last 3 days; every direnv project keeps a root, so
+    # project shells are never collected.
     clean = {
       enable = true;
-      extraArgs = "--keep 10 --keep-since 14d";
+      dates = "daily";
+      extraArgs = "--keep 10 --keep-since 3d --keep-one";
     };
   };
 }
