@@ -7,22 +7,19 @@
     viAlias = true;
     vimAlias = true;
     vimdiffAlias = true;
-    withNodeJs = true;
-    withPython3 = true;
+    # The configuration is pure Lua with no remote plugins, so no provider hosts.
+    withNodeJs = false;
+    withPython3 = false;
 
-    # Scope editor tooling to Neovim rather than the user global PATH.
+    # Language servers live only on Neovim's PATH; formatters and linters come from
+    # modules/dev-tools.nix, and fd/ripgrep/git are global.
     extraPackages = with pkgs; [
-      fd
-      ripgrep
-      git
-
       bash-language-server
       gopls
       lua-language-server
       nil
       pyright
-      taplo
-      typescript
+      typescript # tsserver for typescript-language-server
       typescript-language-server
       vscode-langservers-extracted
       yaml-language-server

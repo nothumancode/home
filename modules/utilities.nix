@@ -8,6 +8,17 @@
 
 let
   localFlakeDir = "${config.xdg.configHome}/home-manager";
+  fnoxBin = lib.getExe' config.programs.fnox.package "fnox";
+
+  # Runs a command in the local checkout, or explains that there is none.
+  inCheckout = name: ''
+    repo=${lib.escapeShellArg localFlakeDir}
+    if [[ ! -f "$repo/flake.nix" ]]; then
+      echo "${name}: no local checkout found at $repo" >&2
+      exit 1
+    fi
+    cd "$repo"
+  '';
 
   hmSwitch = pkgs.writeShellApplication {
     name = "hm-switch";
@@ -42,29 +53,18 @@ let
 
       if [[ "$push" == true && "$dry_run" == false ]]; then
         profile="''${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager"
-        ${lib.getExe pkgs.cachix} push thehuman "$(readlink -f "$profile")"
+        # The push token only exists inside `fnox exec` (modules/fnox.nix).
+        ${fnoxBin} exec -- ${lib.getExe pkgs.cachix} push thehuman "$(readlink -f "$profile")"
       fi
     '';
   };
 
+  # Both wrap the flake's own formatter (flake.nix `treefmt`), so the rules live once.
   hmFmt = pkgs.writeShellApplication {
     name = "hm-fmt";
-    runtimeInputs = [
-      pkgs.findutils
-      pkgs.nixfmt
-      pkgs.stylua
-    ];
     text = ''
-      repo=${lib.escapeShellArg localFlakeDir}
-      if [[ ! -f "$repo/flake.nix" ]]; then
-        echo "hm-fmt: no local checkout found at $repo" >&2
-        exit 1
-      fi
-      cd "$repo"
-      find . -name '*.nix' -print0 | xargs -0 nixfmt
-      if [[ -d modules/neovim ]]; then
-        stylua --no-editorconfig modules/neovim
-      fi
+      ${inCheckout "hm-fmt"}
+      nix fmt
     '';
   };
 
@@ -72,11 +72,7 @@ let
     name = "hm-check";
     runtimeInputs = [
       pkgs.actionlint
-      pkgs.deadnix
-      pkgs.findutils
-      pkgs.nixfmt
       pkgs.statix
-      pkgs.stylua
     ];
     text = ''
       lint_only=false
@@ -89,22 +85,11 @@ let
         fi
       done
 
-      repo=${lib.escapeShellArg localFlakeDir}
-      if [[ ! -f "$repo/flake.nix" ]]; then
-        echo "hm-check: no local checkout found at $repo" >&2
-        exit 1
-      fi
-      cd "$repo"
+      ${inCheckout "hm-check"}
 
-      find . -name '*.nix' -print0 | xargs -0 nixfmt --check
+      nix fmt -- --ci
       statix check .
-      deadnix --fail .
-      if [[ -d modules/neovim ]]; then
-        stylua --no-editorconfig --check modules/neovim
-      fi
-      if [[ -d .github/workflows ]]; then
-        find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) -exec actionlint {} +
-      fi
+      actionlint .github/workflows/*.yml
 
       if [[ "$lint_only" == true ]]; then
         exit 0
@@ -125,8 +110,6 @@ in
 
     eza = {
       enable = true;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
       git = true;
       icons = "never";
       extraOptions = [ "--group-directories-first" ];
@@ -136,8 +119,6 @@ in
 
     fzf = {
       enable = true;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
       defaultCommand = "fd --type f --hidden --follow --exclude .git";
       defaultOptions = [
         "--height=40%"
@@ -169,77 +150,61 @@ in
       };
     };
 
-    zoxide = {
-      enable = true;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
-    };
+    zoxide.enable = true;
   };
 
-  home.packages =
-    with pkgs;
-    [
-      hmCheck
-      hmFmt
-      hmSwitch
+  # Daily tools only. Project toolchains (Go, gcc/make/pkg-config, pnpm, bun,
+  # TypeScript, pinned Pythons) come from each project's own environment; anything
+  # else runs once with `, <command>` (nix-index-database comma).
+  home.packages = with pkgs; [
+    hmCheck
+    hmFmt
+    hmSwitch
 
-      # Language runtimes, package managers, and native build toolchain
-      bun
-      gcc
-      gnumake
-      go
-      nodejs_24
-      pkg-config
-      pnpm
-      python313
-      typescript
+    # Runtimes for scripts and agents (npx-launched MCP servers, ad-hoc Python)
+    nodejs_24
+    python3
 
-      # Code intelligence, structured data, benchmarking, and task runners
-      ast-grep
-      hyperfine
-      hunk
-      just
-      lefthook
-      poppler-utils
-      qpdf
-      sd
-      sqlite
-      tokei
-      watchexec
-      yq-go
+    # Code intelligence, structured data, and task runners
+    ast-grep
+    hunk
+    just
+    lefthook
+    poppler-utils # pdftoppm/pdftotext for agent document skills
+    sd
+    sqlite
+    watchexec
+    yq-go
 
-      # Secrets, security scanning, and Nix workflow tooling
-      age
-      cachix
-      doppler
-      gitleaks
-      nix-output-monitor
-      nix-tree
-      nvd
-      sops
+    # Secrets, security scanning, and Nix workflow tooling
+    age
+    cachix
+    doppler
+    gitleaks
+    nix-output-monitor
+    nix-tree
+    nvd
+    sops
 
-      # Terminal, network, archive, and diagnostic utilities
-      btop
-      curl
-      dnsutils
-      file
-      glow
-      gnutar
-      lsof
-      openssh
-      rsync
-      socat
-      tree
-      unzip
-      wget
-      xh
-      xz
-      zip
-      zstd
-    ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [
-      bubblewrap
-      iproute2
-      psmisc
-    ];
+    # Terminal, network, archive, and diagnostic utilities
+    btop
+    curl
+    dnsutils
+    file
+    gnutar
+    lsof
+    openssh
+    rsync
+    tree
+    unzip
+    wget
+    xz
+    zip
+    zstd
+
+    # Linux-only (every target is Linux)
+    bubblewrap
+    iproute2
+    psmisc
+  ];
 }

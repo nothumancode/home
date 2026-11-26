@@ -85,16 +85,17 @@ let
   ];
 
   extraCliPackages = with pkgs; [
+    # Wit CLI for agents and humans
+    inputs.wit.packages.${pkgs.stdenv.hostPlatform.system}.default
     # Kanban `todomd` CLI
     inputs.kbtd.packages.${pkgs.stdenv.hostPlatform.system}.default
-    # Scoped to .github/workflows/*.y*ml in Neovim; available globally for CLI/agent checks.
-    actionlint
     # Provides the treefmt-wrapped project formatter; never run as a single-buffer formatter.
     nixfmt-tree
   ];
 
-  packages = lib.unique (lib.concatMap (lang: lang.packages) languages);
-  editorPackages = lib.unique (packages ++ [ pkgs.actionlint ]);
+  # Formatters and linters, on Neovim's PATH and globally for CLI/agent checks.
+  # actionlint is scoped to .github/workflows/*.y*ml in Neovim, so it has no filetype entry.
+  editorPackages = lib.unique (lib.concatMap (lang: lang.packages) languages ++ [ pkgs.actionlint ]);
 
   formattersByFiletype = lib.listToAttrs (
     lib.concatMap (lang: map (ft: lib.nameValuePair ft [ lang.formatter ]) lang.filetypes) (
@@ -109,7 +110,7 @@ let
   );
 in
 {
-  home.packages = lib.unique (packages ++ extraCliPackages);
+  home.packages = editorPackages ++ extraCliPackages;
 
   editorconfig = {
     enable = true;

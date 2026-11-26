@@ -5,11 +5,9 @@ on:
     branches:
       - main
   pull_request:
+  # Also started by update-flake-lock.yml on its branch: pull requests opened with the
+  # workflow token do not trigger `pull_request` runs.
   workflow_dispatch:
-    inputs:
-      deploy_agent:
-        description: "Cachix agent name (main only; leave blank to check only)"
-        type: string
 
 permissions:
   contents: read
@@ -26,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: DeterminateSystems/nix-installer-action@v23
         with:
           extra-conf: |
             access-tokens = github.com=${{ github.token }}
@@ -42,20 +40,3 @@ jobs:
 
       - name: Check flake
         run: nix flake check --print-build-logs
-
-      - name: Deploy to Cachix agent
-        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_agent != ''
-        env:
-          CACHIX_ACTIVATE_TOKEN: ${{ secrets.CACHIX_ACTIVATE_TOKEN }}
-          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          DEPLOY_AGENT: ${{ inputs.deploy_agent }}
-        run: |
-          : "${CACHIX_ACTIVATE_TOKEN:?Set the CACHIX_ACTIVATE_TOKEN secret to deploy}"
-          : "${CACHIX_AUTH_TOKEN:?Set the CACHIX_AUTH_TOKEN secret to push}"
-          spec=$(nix build --no-link --print-out-paths .#cachix-deploy)
-          if ! jq -e --arg agent "$DEPLOY_AGENT" '.agents | has($agent)' "$spec" >/dev/null; then
-            printf 'Agent %s is not listed in flake.nix\n' "$DEPLOY_AGENT" >&2
-            exit 1
-          fi
-          cachix push thehuman "$spec"
-          cachix deploy activate "$spec" --agent "$DEPLOY_AGENT"

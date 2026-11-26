@@ -1,3 +1,8 @@
 result
 .env*
 .DS_Store
+
+# Agent skills installed per checkout (`.claude/skills` mirrors `.agents/skills`) and
+# brain handover notes: local state, not configuration.
+/.agents/
+/.claude/

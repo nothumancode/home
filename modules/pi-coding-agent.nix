@@ -2,25 +2,22 @@
   config,
   lib,
   pkgs,
+  withDopplerSecrets,
   ...
 }:
 
 let
   jsonFormat = pkgs.formats.json { };
 
-  piWrapper = pkgs.writeShellApplication {
+  piWrapper = withDopplerSecrets {
     name = "pi";
-    runtimeInputs = [ ];
-    text = ''
-      DOPPLER_PROJECT="vault" DOPPLER_CONFIG="prd" \
-        ${lib.getExe pkgs.doppler} run \
-          --only-secrets LOGGLY_API_TOKEN \
-          --only-secrets LOGGLY_SUBDOMAIN \
-          --only-secrets EXA_API_KEY \
-          --only-secrets AI_GATEWAY_API_KEY \
-          -- \
-          ${lib.getExe pkgs.pi-coding-agent} "$@"
-    '';
+    program = lib.getExe pkgs.pi-coding-agent;
+    secrets = [
+      "LOGGLY_API_TOKEN"
+      "LOGGLY_SUBDOMAIN"
+      "EXA_API_KEY"
+      "AI_GATEWAY_API_KEY"
+    ];
   };
   openTuiDefaults = jsonFormat.generate "pi-open-tui.json" {
     enabled = true;
@@ -71,15 +68,8 @@ in
     mutableSettings = true;
     package = piWrapper;
 
-    extraPackages = with pkgs; [
-      ast-grep
-      bun
-      fd
-      git
-      jq
-      nodejs_24
-      ripgrep
-    ];
+    # Everything else Pi calls (ast-grep, fd, git, jq, node, ripgrep) is global.
+    extraPackages = [ pkgs.bun ];
 
     settings = {
       defaultProvider = "openai";

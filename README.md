@@ -53,47 +53,23 @@ image build reads a token from a Modal secret, created once:
 fnox exec -- modal secret create github GITHUB_TOKEN="$(gh auth token)"
 ```
 
-## Deploy with Cachix
+## Updates and the cache
 
-Cachix Deploy pushes a built generation to long-lived machines; each runs an
-agent named after its hostname. Use a Cachix workspace backed by the `thehuman`
-binary cache.
+CI builds every push to `main` and pushes the result to the `thehuman` Cachix
+cache; pull requests build without pushing. Every Monday the **Update
+flake.lock** workflow opens a pull request with new input revisions and starts a
+CI run on its branch, so the new generation is cached before you merge and run
+`hm-switch` (or `nix run github:thehumanworks/home` on a machine without a
+checkout).
 
-### Enroll a machine once
+## Secrets
 
-1. Add its hostname to `deployHosts` in [flake.nix](flake.nix).
-2. On the machine, as `rodat`, store the workspace's agent token and switch:
+fnox resolves secrets from Doppler (`vault`/`prd`, set once in
+`modules/doppler.nix`). Credentials are declared with `env = "exec"`, so the
+shell hook never exports them: use them per command, for example
+`fnox exec -- cachix push thehuman <path>` or `fnox exec -- modal shell <id>`.
+Pi and twg get only their own secrets through `doppler run --only-secrets`.
 
-   ```sh
-   (umask 077; printf 'CACHIX_AGENT_TOKEN=%s\n' "$(fnox --if-missing error get CACHIX_AGENT_TOKEN)" \
-     > ~/.config/cachix-agent.token)
-   hm-switch
-   journalctl --user -u cachix-agent.service -n 20
-   ```
-
-   Look for **Agent registered.** On a multi-user Nix install, trust the cache
-   in the Nix daemon first (see [AGENTS.md](AGENTS.md)).
-3. To keep the agent running after logout: `sudo loginctl enable-linger rodat`.
-   To unenroll, delete the token file and stop `cachix-agent.service`.
-
-### Deploy
-
-```sh
-export CACHIX_AUTH_TOKEN=$(fnox --if-missing error get CACHIX_AUTH_TOKEN)
-export CACHIX_ACTIVATE_TOKEN=$(fnox --if-missing error get CACHIX_ACTIVATE_TOKEN)
-spec=$(nix build --no-link --print-out-paths .#cachix-deploy)
-cachix push thehuman "$spec"
-cachix deploy activate "$spec"
-```
-
-This deploys to every machine in `deployHosts` and waits for them; an offline
-machine applies it when its agent reconnects. Add `--agent <hostname>` for one
-machine, or `--async` to not wait. The activate token comes from **Start a
-Deployment** in the workspace; the agent token cannot start a deployment.
-
-From GitHub: add the `CACHIX_ACTIVATE_TOKEN` secret next to `CACHIX_AUTH_TOKEN`,
-then **Actions → CI → Run workflow** on `main` with the hostname as the agent.
-Pushes, pull requests, and runs with a blank agent do not deploy.
-
-Home Manager rejects conflicting unmanaged files on the target; resolve them
-there and deploy again.
+GitHub logins (github.com and the enterprise host) are synced from Doppler by
+the `setup-github-auth` user service once per login session. After rotating a
+token, run `systemctl --user restart setup-github-auth`.

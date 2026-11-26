@@ -1,6 +1,8 @@
 {
   cachixConfig,
   inputs,
+  lib,
+  unfreePackages,
   ...
 }:
 
@@ -10,14 +12,15 @@
     inputs.capnshell.homeModules.default
     inputs.twg.homeManagerModules.default
     inputs.brain.homeManagerModules.default
+    inputs.nix-index-database.homeModules.nix-index
     ./modules/bash.nix
     ./modules/brain.nix
-    ./modules/cachix-deploy.nix
     ./modules/claude-code.nix
     ./modules/codex.nix
     ./modules/dagu.nix
     ./modules/dev-tools.nix
     ./modules/direnv.nix
+    ./modules/doppler.nix
     ./modules/fnox.nix
     ./modules/gh.nix
     ./modules/git.nix
@@ -42,9 +45,13 @@
       LESS = "-FRX";
       NODE_USE_SYSTEM_CA = "1";
       UV_SYSTEM_CERTS = "true";
-      DOPPLER_PROJECT = "vault";
-      DOPPLER_CONFIG = "prd";
     };
+  };
+
+  # Every target is a non-NixOS Linux (WSL Ubuntu, Debian sandboxes), all headless.
+  targets.genericLinux = {
+    enable = true;
+    gpu.enable = false;
   };
 
   xdg = {
@@ -54,11 +61,9 @@
       "nixpkgs/config.nix".text = ''
         {
           allowUnfreePredicate =
-            pkg:
-            builtins.elem (pkg.pname or (builtins.parseDrvName pkg.name).name) [
-              "claude-code"
-              "twg"
-            ];
+            pkg: builtins.elem (pkg.pname or (builtins.parseDrvName pkg.name).name) [ ${
+              lib.concatMapStringsSep " " builtins.toJSON unfreePackages
+            } ];
         }
       '';
 
@@ -81,5 +86,11 @@
     };
   };
 
-  programs.home-manager.enable = true;
+  programs = {
+    home-manager.enable = true;
+
+    # command-not-found names the package for a missing command; `, <cmd>` runs it once.
+    nix-index.enable = true;
+    nix-index-database.comma.enable = true;
+  };
 }

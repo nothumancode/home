@@ -103,8 +103,6 @@
 
     lazygit = {
       enable = true;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
       settings = {
         disableStartupPopups = true;
         notARepository = "quit";

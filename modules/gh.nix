@@ -40,7 +40,9 @@ let
       }
 
       doppler_get() {
-        "$doppler_bin" secrets get "$1" -p vault -c prd --plain --no-check-version 2>/dev/null
+        "$doppler_bin" secrets get "$1" \
+          -p ${lib.escapeShellArg config.doppler.project} -c ${lib.escapeShellArg config.doppler.config} \
+          --plain --no-check-version 2>/dev/null
       }
 
       sync_gh_token() {
@@ -176,7 +178,18 @@ in
     };
   };
 
-  home.activation.setupGithubAuth = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    run ${lib.getExe setupGithubAuth}
-  '';
+  # Network calls stay out of activation: the sync runs once per login session (and when
+  # the script changes), not on every switch, image build, or headless activation.
+  # After rotating a token: `systemctl --user restart setup-github-auth` or `setup-github-auth`.
+  home.packages = [ setupGithubAuth ];
+
+  systemd.user.services.setup-github-auth = {
+    Unit.Description = "Sync GitHub and GitHub Enterprise logins from Doppler";
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = lib.getExe setupGithubAuth;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 }
