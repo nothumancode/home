@@ -2,24 +2,19 @@
   config,
   lib,
   pkgs,
-  withDopplerSyncedFile,
+  dopplerLib,
   ...
 }:
 
 let
   jsonFormat = pkgs.formats.json { };
 
-  # Pi's logins (auth.json) follow you across machines via agents/pi PI_AUTH_JSON:
-  # `doppler secrets get PI_AUTH_JSON -p agents -c pi --raw --plain | jq .piAuthJson`.
-  piWrapper = withDopplerSyncedFile {
+  # Pi's logins (auth.json) follow you across machines via agents/pi PI_AUTH_JSON, and the
+  # file is removed when the last session exits (`doppler-auth-sync --help`, preset pi).
+  piWrapper = dopplerLib.withSyncedFile {
     name = "pi";
-    project = "agents";
-    config = "pi";
+    preset = "pi";
     program = lib.getExe pkgs.pi-coding-agent;
-    path = "${config.programs.pi-coding-agent.configDir}/auth.json";
-    secret = "PI_AUTH_JSON";
-    envelopeKey = "piAuthJson";
-    removeOnExit = true;
   };
 
   openTuiDefaults = jsonFormat.generate "pi-open-tui.json" {

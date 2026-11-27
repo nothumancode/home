@@ -3,14 +3,14 @@
   inputs,
   lib,
   pkgs,
-  withDopplerSecrets,
+  dopplerLib,
   ...
 }:
 
 {
   programs.twg = {
     enable = true;
-    package = withDopplerSecrets {
+    package = dopplerLib.withSecrets {
       name = "twg";
       project = "tools";
       config = "atlassian";

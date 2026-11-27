@@ -3,7 +3,7 @@
   lib,
   pkgs,
   remoteFlake,
-  withDopplerSecrets,
+  dopplerLib,
   ...
 }:
 
@@ -11,13 +11,13 @@ let
   localFlakeDir = "${config.xdg.configHome}/home-manager";
 
   # Commands that need credentials get their own Doppler config.
-  cachixWithToken = withDopplerSecrets {
+  cachixWithToken = dopplerLib.withSecrets {
     name = "cachix-with-token";
     project = "tools";
     config = "nix";
     program = lib.getExe pkgs.cachix;
   };
-  modalWithToken = withDopplerSecrets {
+  modalWithToken = dopplerLib.withSecrets {
     name = "modal";
     project = "tools";
     config = "modal";
@@ -193,7 +193,6 @@ in
     # Secrets, security scanning, and Nix workflow tooling
     age
     cachix
-    doppler
     gitleaks
     nix-output-monitor
     nix-tree

@@ -99,9 +99,13 @@ checkout).
 ## Secrets
 
 Every secret comes from Doppler, through the `doppler` CLI with whatever auth
-you give it: `doppler login`, or a `DOPPLER_TOKEN` in the environment. Nothing
-exports secrets into the shell. Each command that needs credentials is a
-launcher for its own Doppler config, and gets all of that config's secrets:
+you give it: `doppler login`, or a `DOPPLER_TOKEN` in the environment. The
+launchers, the synced logins and the shell integration below come from
+[`github:thehumanworks/doppler-nix`](https://github.com/thehumanworks/doppler-nix)
+(the `programs.doppler` module in `modules/doppler.nix`), which project flakes
+can use too. Nothing exports secrets into the shell here. Each command that
+needs credentials is a launcher for its own Doppler config, and gets all of that
+config's secrets:
 
 | Command | Doppler project/config |
 | --- | --- |
@@ -119,13 +123,29 @@ uses `global`/`lf` (set in `modules/doppler.nix`), for example
 give the account read access to every project above, and write access to
 `agents`/`pi` and `agents`/`codex` (below).
 
-`pi` and `codex` also share their logins across machines, each through one
-secret (`withDopplerSyncedFile` in `modules/doppler.nix`):
+A project gets its own secrets from its own Doppler config, not from this
+configuration: `use doppler PROJECT CONFIG` in its `.envrc` (direnv), or
+`dopplerLib.shellHook` and `dopplerLib.withSecrets` in its flake (see the
+doppler-nix README).
 
-| Command | Login file | Secret | Newer copy |
-| --- | --- | --- | --- |
-| `pi` | `~/.pi/agent/auth.json` | `PI_AUTH_JSON` | per provider, later `expires` |
-| `codex` | `~/.codex/auth.json` | `CODEX_AUTH_JSON` | whole file, later `last_refresh` |
+`pi` and `codex` also share their logins across machines, each through one
+secret. The logic is doppler-nix's standalone script `doppler-auth-sync` (on
+PATH after a switch; `doppler-auth-sync --help`); the Nix launchers only call
+it (`dopplerLib.withSyncedFile`):
+
+| Command | Login file | Secret | Newer copy | After exit |
+| --- | --- | --- | --- | --- |
+| `pi` | `~/.pi/agent/auth.json` | `PI_AUTH_JSON` | per provider, later `expires` | deleted |
+| `codex` | `~/.codex/auth.json` | `CODEX_AUTH_JSON` | whole file, later `last_refresh` | kept (its app-server and IDE extensions read it) |
+
+Without Nix, take `scripts/doppler-auth-sync` from the doppler-nix repository;
+it needs bash 4.2+, jq 1.6+, `flock` (util-linux), coreutils and the Doppler
+CLI:
+
+```sh
+alias pi='doppler-auth-sync --preset pi -- command pi'
+alias codex='doppler-auth-sync --preset codex -- command codex'
+```
 
 Before the tool starts, credentials that are newer in Doppler are merged into
 the file; after it exits (Ctrl-C included), the secret is read again and written
@@ -135,8 +155,9 @@ only if it changed during the run. The secret holds
 `codexAuthJson`), e.g.
 `doppler secrets get PI_AUTH_JSON -p agents -c pi --raw --plain | jq .piAuthJson`.
 To set one up, paste the tool's `auth.json` into the secret as it is: the first
-exit wraps it. Once the write-back succeeds, the last session on the machine to
-exit deletes the file (`removeOnExit`); other sessions still running keep it.
+exit wraps it. With `--remove-on-exit` (Pi), once the write-back succeeds, the
+last session on the machine to exit deletes the file; other sessions still
+running keep it.
 When Doppler is unreachable at exit, the file stays and is written back after
 the next run. Logging out does not sync: remove the login in Doppler as well.
 

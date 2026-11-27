@@ -43,6 +43,29 @@
         "type": "github"
       }
     },
+    "doppler": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795783705,
+        "narHash": "sha256-Tr1uhG3iNYclR9wgwKEgCv/buvOiCRdRR2Dq/JaKMpE=",
+        "owner": "thehumanworks",
+        "repo": "doppler-nix",
+        "rev": "149672bb04cc64d7d79fc50c991d995166cf411c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "thehumanworks",
+        "repo": "doppler-nix",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -70,11 +93,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795779491,
-        "narHash": "sha256-e0NZFlusARUULricwKsIXhKcTaTXxdZXITaqd4cKK1U=",
+        "lastModified": 1795786964,
+        "narHash": "sha256-3+aIiqWDUxeG8y9R/EbkR+tUvRxXE4Khu4AsAl6S2/4=",
         "owner": "thehumanworks",
         "repo": "kbtd",
-        "rev": "cfe106e02c949a7dd18473abd233303b2d19ba67",
+        "rev": "330380d1c1a98bcfbd046641c6ebbc5a58fabb81",
         "type": "github"
       },
       "original": {
@@ -123,6 +146,7 @@
       "inputs": {
         "brain": "brain",
         "capnshell": "capnshell",
+        "doppler": "doppler",
         "home-manager": "home-manager",
         "kbtd": "kbtd",
         "nix-index-database": "nix-index-database",

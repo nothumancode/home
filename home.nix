@@ -12,6 +12,7 @@
     inputs.capnshell.homeModules.default
     inputs.twg.homeManagerModules.default
     inputs.brain.homeManagerModules.default
+    inputs.doppler.homeManagerModules.default
     inputs.nix-index-database.homeModules.nix-index
     ./modules/bash.nix
     ./modules/brain.nix

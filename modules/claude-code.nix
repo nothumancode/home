@@ -1,12 +1,12 @@
 {
   lib,
   pkgs,
-  withDopplerSecrets,
+  dopplerLib,
   ...
 }:
 
 let
-  claudeCodeWrapped = withDopplerSecrets {
+  claudeCodeWrapped = dopplerLib.withSecrets {
     name = "claude";
     project = "agents";
     config = "claude-code";

@@ -38,6 +38,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
+    doppler = {
+      url = "github:thehumanworks/doppler-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
   };
 
   outputs =
