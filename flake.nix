@@ -183,6 +183,11 @@
               actionlint .github/workflows/*.yml
               touch "$out"
             '';
+        safe-commands = pkgs.runCommand "safe-commands" { } ''
+          export PATH=${self.homeConfigurations.${username}.config.home.path}/bin:$PATH
+          ${pkgs.dash}/bin/dash ${./modules/bash/test-safe-commands.sh}
+          touch "$out"
+        '';
         remote-switch = hmRemoteSwitch;
         home = self.homeConfigurations.${username}.activationPackage;
         # Starts the generated Neovim configuration headless and runs modules/neovim/test.lua.
