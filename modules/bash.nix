@@ -54,6 +54,25 @@
         PS1='\[\e[1m\]▲\[\e[0m\] \[\e[94m\]\w\[\e[0m\]\n\[\e[35m\]❯\[\e[0m\] '
 
         if [[ -v BLE_VERSION ]] || source "${pkgs.blesh}/share/blesh/ble.sh" --attach=prompt; then
+          if ble/base/is-wsl; then
+            # Give typing priority over speculative scans of Windows directories.
+            bleopt complete_auto_delay=250
+
+            _hm_complete_wsl_command() {
+              local filtered
+              if [[ $COMPV && $COMPV != *[!a-zA-Z0-9_.-]* && :$comp_type: != *:[maA]:* &&
+                    :$PATH: == *:/mnt/[a-z]/* ]] &&
+                 filtered=$(ble/util/conditional-sync \
+                   'exec ${lib.getExe pkgs.python3} -IS ${./bash/wsl-completion-path.py} "$COMPV" "$PATH"' \
+                   '! ble/complete/check-cancel' 20 progressive-weight) &&
+                 [[ $filtered != : && $filtered == *: ]]; then
+                local PATH=''${filtered%:}
+              fi
+              ble/function#advice/do
+            }
+            blehook/eval-after-load complete 'ble/function#advice -f around ble/complete/source:command/.print-command _hm_complete_wsl_command'
+          fi
+
           ${lib.optionalString config.programs.fzf.enable ''
             _ble_contrib_fzf_base="${config.programs.fzf.package}/share/fzf"
             ble-import -d integration/fzf-completion

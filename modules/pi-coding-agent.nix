@@ -8,6 +8,7 @@
 
 let
   jsonFormat = pkgs.formats.json { };
+  defaultModel = "gpt-6.2-sol";
 
   # Pi's logins (auth.json) follow you across machines via agents/pi PI_AUTH_JSON, and the
   # file is removed when the last session exits (`doppler-auth-sync --help`, preset pi).
@@ -15,6 +16,49 @@ let
     name = "pi";
     preset = "pi";
     program = lib.getExe pkgs.pi-coding-agent;
+  };
+
+  piWithSystemPrompt = pkgs.writeShellApplication {
+    name = "pi";
+    text = ''
+      # Pi dispatches these subcommands by the first argument.
+      case "''${1-}" in
+        auth|config|install|list|mcp|remove|uninstall|update)
+          exec ${lib.getExe piWrapper} "$@"
+          ;;
+      esac
+
+      args=("$@")
+      model=${lib.escapeShellArg defaultModel}
+      # Pi takes the last --model before --. Skip values that may look like flags.
+      while (( $# > 1 )); do
+        case "$1" in
+          --) break ;;
+          --model)
+            model="$2"
+            shift
+            ;;
+          --provider|--api-key|--system-prompt|--append-system-prompt|-n|--name|\
+          --session|--session-id|--fork|--session-dir|--models|-t|--tools|\
+          -xt|--exclude-tools|--thinking|--export|-e|--extension|--skill|\
+          --prompt-template|--theme)
+            shift
+            ;;
+        esac
+        shift
+      done
+
+      model="''${model##*/}" # Also handles gateway IDs such as openai/gpt-6.2-sol.
+      model="''${model%:*}"  # Ignore Pi's optional :thinking suffix.
+      set -- "''${args[@]}"
+      case "''${model,,}" in
+        gpt-6.2-?*)
+          # Prepend the default so an explicit --system-prompt still wins.
+          set -- --system-prompt ${./agents/codex/system-prompt.md} "$@"
+          ;;
+      esac
+      exec ${lib.getExe piWrapper} "$@"
+    '';
   };
 
   openTuiDefaults = jsonFormat.generate "pi-open-tui.json" {
@@ -64,14 +108,14 @@ in
   programs.pi-coding-agent = {
     enable = true;
     mutableSettings = true;
-    package = piWrapper;
+    package = piWithSystemPrompt;
 
     # Everything else Pi calls (ast-grep, fd, git, jq, node, ripgrep) is global.
     extraPackages = [ pkgs.bun ];
 
     settings = {
+      inherit defaultModel;
       defaultProvider = "openai";
-      defaultModel = "gpt-6.2-sol";
       enabledModels = [
         "openai/gpt-6.2-sol"
         "openai/gpt-6.2-astra"
