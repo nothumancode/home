@@ -107,6 +107,7 @@ launcher for its own Doppler config, and gets all of that config's secrets:
 | --- | --- |
 | `claude` | `agents`/`claude-code` |
 | `pi` | `agents`/`pi` |
+| `codex` | `agents`/`codex` |
 | `twg` | `tools`/`atlassian` |
 | `modal` | `tools`/`modal` |
 | `hm-switch --push` (`cachix push`) | `tools`/`nix` |
@@ -115,7 +116,29 @@ Without Doppler auth a launcher starts the command without secrets, so a login
 the tool stored itself still works. A bare `doppler run` or `doppler secrets`
 uses `global`/`lf` (set in `modules/doppler.nix`), for example
 `doppler run -- cachix push thehuman <path>`. With a service account token,
-give the account read access to every project above.
+give the account read access to every project above, and write access to
+`agents`/`pi` and `agents`/`codex` (below).
+
+`pi` and `codex` also share their logins across machines, each through one
+secret (`withDopplerSyncedFile` in `modules/doppler.nix`):
+
+| Command | Login file | Secret | Newer copy |
+| --- | --- | --- | --- |
+| `pi` | `~/.pi/agent/auth.json` | `PI_AUTH_JSON` | per provider, later `expires` |
+| `codex` | `~/.codex/auth.json` | `CODEX_AUTH_JSON` | whole file, later `last_refresh` |
+
+Before the tool starts, credentials that are newer in Doppler are merged into
+the file; after it exits (Ctrl-C included), the secret is read again and written
+back only if something is newer locally. An API key, which has no time, wins
+only if it changed during the run. The secret holds
+`{"<envelope>": <auth.json>, "meta": {"lastRefreshed": <ms>}}` (`piAuthJson`,
+`codexAuthJson`), e.g.
+`doppler secrets get PI_AUTH_JSON -p agents -c pi --raw --plain | jq .piAuthJson`.
+To set one up, paste the tool's `auth.json` into the secret as it is: the first
+exit wraps it. Once the write-back succeeds, the last session on the machine to
+exit deletes the file (`removeOnExit`); other sessions still running keep it.
+When Doppler is unreachable at exit, the file stays and is written back after
+the next run. Logging out does not sync: remove the login in Doppler as well.
 
 GitHub logins happen at activation. Each switch reads one Doppler config per
 host and stores the tokens in `gh`'s own credential store, so `gh` and git need

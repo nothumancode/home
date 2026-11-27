@@ -40,7 +40,9 @@ let
       warn() {
         printf 'setup-github-auth: %s\n' "$1" >&2
         shift
-        printf '  %s\n' "$@" >&2
+        if (($#)); then
+          printf '  %s\n' "$@" >&2
+        fi
       }
 
       strip_host() {

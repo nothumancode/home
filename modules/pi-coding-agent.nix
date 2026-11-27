@@ -2,19 +2,26 @@
   config,
   lib,
   pkgs,
-  withDopplerSecrets,
+  withDopplerSyncedFile,
   ...
 }:
 
 let
   jsonFormat = pkgs.formats.json { };
 
-  piWrapper = withDopplerSecrets {
+  # Pi's logins (auth.json) follow you across machines via agents/pi PI_AUTH_JSON:
+  # `doppler secrets get PI_AUTH_JSON -p agents -c pi --raw --plain | jq .piAuthJson`.
+  piWrapper = withDopplerSyncedFile {
     name = "pi";
     project = "agents";
     config = "pi";
     program = lib.getExe pkgs.pi-coding-agent;
+    path = "${config.programs.pi-coding-agent.configDir}/auth.json";
+    secret = "PI_AUTH_JSON";
+    envelopeKey = "piAuthJson";
+    removeOnExit = true;
   };
+
   openTuiDefaults = jsonFormat.generate "pi-open-tui.json" {
     enabled = true;
     header = true;

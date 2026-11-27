@@ -70,11 +70,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795718612,
-        "narHash": "sha256-qB9GmhnsOcx1RHnljlv9Z8sdx5PHcSBXYu2bVoyZrvE=",
+        "lastModified": 1795779491,
+        "narHash": "sha256-e0NZFlusARUULricwKsIXhKcTaTXxdZXITaqd4cKK1U=",
         "owner": "thehumanworks",
         "repo": "kbtd",
-        "rev": "2746464c6c11e7e650a5f58d617959da7aa6b507",
+        "rev": "cfe106e02c949a7dd18473abd233303b2d19ba67",
         "type": "github"
       },
       "original": {
