@@ -5,22 +5,7 @@
   ...
 }:
 
-let
-  safeCommand =
-    name: script:
-    pkgs.writers.writeDashBin name (
-      builtins.replaceStrings
-        [ "@mv@" "@rm@" "@getopt@" ]
-        [ "${pkgs.coreutils}/bin/mv" "${pkgs.coreutils}/bin/rm" (lib.getExe' pkgs.util-linux "getopt") ]
-        (builtins.readFile script)
-    );
-in
 {
-  home.packages = [
-    (safeCommand "mv" ./bash/mv.sh)
-    (safeCommand "rm" ./bash/rm.sh)
-  ];
-
   programs.bash = {
     enable = true;
     enableCompletion = true;
@@ -56,7 +41,6 @@ in
     ];
 
     shellAliases = {
-      mv = "${pkgs.coreutils}/bin/mv -i";
       gs = "git status -sb";
       gc = "git commit -m";
       gp = "git push";
