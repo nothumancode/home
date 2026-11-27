@@ -53,11 +53,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795783705,
-        "narHash": "sha256-Tr1uhG3iNYclR9wgwKEgCv/buvOiCRdRR2Dq/JaKMpE=",
+        "lastModified": 1795791524,
+        "narHash": "sha256-mXNpleRJfMl5pI0bzsg/4IoDJjat8fuUUzoutn+r1to=",
         "owner": "thehumanworks",
         "repo": "doppler-nix",
-        "rev": "149672bb04cc64d7d79fc50c991d995166cf411c",
+        "rev": "cddef3cd3530e0ce4eeb24ffd79bbf4f439efb71",
         "type": "github"
       },
       "original": {
