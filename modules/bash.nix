@@ -42,6 +42,8 @@
 
     shellAliases = {
       gs = "git status -sb";
+      gc = "git commit -m";
+      gp = "git push";
       gd = "git diff";
       gds = "git diff --staged";
       gl = "git log --oneline --graph --decorate -20";
