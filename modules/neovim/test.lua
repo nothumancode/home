@@ -97,6 +97,60 @@ wait("cleared diagnostics", function()
 	return count("invalid-assignment") == 0 and count("F401") == 0
 end)
 
+-- Completion: Enter and Tab accept the highlighted (first) item, a tap accepts the tapped one.
+-- It runs in a child Neovim with a terminal UI: without a UI, clicks never reach floating windows.
+local sock = vim.fn.tempname()
+local child = vim.fn.jobstart({ vim.v.progpath, "--listen", sock }, { pty = true, width = 80, height = 24 })
+wait("child Neovim socket", function()
+	return vim.uv.fs_stat(sock) ~= nil
+end, 10000)
+local rpc = vim.fn.sockconnect("pipe", sock, { rpc = true })
+local function remote(code, ...)
+	return vim.rpcrequest(rpc, "nvim_exec_lua", code, { ... })
+end
+wait("child Neovim startup", function()
+	return remote("return vim.v.vim_did_enter") == 1
+end)
+local function menu_open()
+	return remote("return require('blink.cmp').is_menu_visible()")
+end
+remote("vim.cmd.enew() vim.api.nvim_buf_set_lines(0, 0, -1, false, { '', 'alphabet alpaca alpine' })")
+local function complete(accept)
+	remote("vim.api.nvim_buf_set_lines(0, 0, 1, false, { '' }) vim.api.nvim_win_set_cursor(0, { 1, 0 })")
+	vim.rpcrequest(rpc, "nvim_input", "<Esc>ialp")
+	wait("completion menu", menu_open, 10000)
+	local labels = remote("return vim.tbl_map(function(i) return i.label end, require('blink.cmp').get_items())")
+	local expected = labels[accept()]
+	wait("accepted completion", function()
+		return not menu_open()
+	end, 5000)
+	local line = remote("return vim.api.nvim_get_current_line()")
+	assert(line == expected, "Completed " .. vim.inspect(line) .. ", expected " .. vim.inspect(expected))
+	assert(vim.rpcrequest(rpc, "nvim_get_mode").mode == "i", "Accepting left insert mode")
+end
+for _, key in ipairs({ "<CR>", "<Tab>" }) do
+	complete(function()
+		vim.rpcrequest(rpc, "nvim_input", key)
+		return 1
+	end)
+end
+complete(function()
+	local pos = remote([[
+		local win = require('blink.cmp.completion.windows.menu').win:get_win()
+		return vim.fn.screenpos(win, 2, 1)
+	]])
+	for _, action in ipairs({ "press", "release" }) do
+		vim.rpcrequest(rpc, "nvim_input_mouse", "left", action, "", 0, pos.row - 1, pos.col)
+	end
+	return 2
+end)
+-- Without a menu, Enter still breaks the line.
+vim.rpcrequest(rpc, "nvim_input", "<CR>")
+wait("newline", function()
+	return remote("return vim.api.nvim_buf_line_count(0)") == 3
+end, 5000)
+vim.fn.jobstop(child)
+
 -- Terminals: one per command, reopened while the job runs
 local terminals = require("home.terminals")
 local term = terminals.open({ vim.o.shell, "-c", "sleep 30" }, "test")
@@ -111,4 +165,6 @@ vim.cmd("checkhealth home")
 local report = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
 assert(report:find("Language servers") and not report:find("Failed to run healthcheck"), report)
 
-print("Theme, keymaps, parsers, explorer, formatting, ty/Ruff navigation and diagnostics, terminals and health passed.")
+print(
+	"Theme, keymaps, parsers, explorer, formatting, ty/Ruff navigation and diagnostics, completion, terminals and health passed."
+)

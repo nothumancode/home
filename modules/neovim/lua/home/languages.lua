@@ -70,10 +70,23 @@ end
 local function setup_completion()
 	local icons = require("mini.icons")
 	local cmp = require("blink.cmp")
+	-- blink.cmp ignores the mouse, so a click or tap on a menu row would focus the menu window.
+	local function accept_tapped()
+		local menu = require("blink.cmp.completion.windows.menu").win:get_win()
+		local pos = vim.fn.getmousepos()
+		return menu ~= nil and pos.winid == menu and pos.line > 0 and cmp.accept({ index = pos.line })
+	end
 	cmp.setup({
-		keymap = { preset = "default" }, -- Ctrl-Space: menu/docs; Ctrl-n/p: select; Ctrl-y: accept
+		-- Ctrl-Space: menu/docs; Ctrl-n/p or Up/Down: select; Enter, Tab, Ctrl-y or a tap: accept
+		-- the highlighted item (the first one until another is selected).
+		keymap = {
+			preset = "default",
+			["<CR>"] = { "select_and_accept", "fallback" },
+			["<Tab>"] = { "select_and_accept", "snippet_forward", "fallback" },
+			["<LeftMouse>"] = { accept_tapped, "fallback" },
+		},
 		completion = {
-			list = { selection = { preselect = false, auto_insert = false } },
+			list = { selection = { preselect = true, auto_insert = false } },
 			documentation = { auto_show = true, auto_show_delay_ms = 200 },
 			menu = {
 				draw = {
