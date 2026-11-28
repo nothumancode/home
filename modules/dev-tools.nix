@@ -85,8 +85,6 @@ let
   ];
 
   extraCliPackages = with pkgs; [
-    # Wit CLI for agents and humans
-    inputs.wit.packages.${pkgs.stdenv.hostPlatform.system}.default
     # Kanban `todomd` CLI
     inputs.kbtd.packages.${pkgs.stdenv.hostPlatform.system}.default
     # Provides the treefmt-wrapped project formatter; never run as a single-buffer formatter.

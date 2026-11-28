@@ -2,7 +2,7 @@
   description = "Home Manager configuration of rodat";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz";
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -31,6 +31,10 @@
     };
     kbtd = {
       url = "github:thehumanworks/kbtd";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    jiradiff = {
+      url = "github:thehumanworks/jiradiff";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     brain = {

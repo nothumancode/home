@@ -30,11 +30,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795705424,
-        "narHash": "sha256-SneyqwRgKrYBmSNKOnCRhqrs65pu3WNPAZmtVnmUDvw=",
+        "lastModified": 1795854990,
+        "narHash": "sha256-Z5Vspjg8c5d14gFqI49QYvb/dEVbUxIekv+cgJCcfcQ=",
         "owner": "thehumanworks",
         "repo": "capnshell",
-        "rev": "c87fb8c982640efa9481ed826f29e1fac59085b3",
+        "rev": "f015bf965b7aea1a289ad2346d95392fced3073d",
         "type": "github"
       },
       "original": {
@@ -73,16 +73,36 @@
         ]
       },
       "locked": {
-        "lastModified": 1795748630,
-        "narHash": "sha256-J1iQ1QMnkFwZFXnlPt2t3Qx7TsGjw08/0L3QMqNt+Wg=",
+        "lastModified": 1795827905,
+        "narHash": "sha256-Udjs2j0EkvK+qGXKHRIQwXWRgzNBIl4oXSUktuOzbmQ=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "54f903fdaaf5d5720ed36706fe75332af69eb793",
+        "rev": "5f5abf5eb8de62d954232f3797b5bf4505656b91",
         "type": "github"
       },
       "original": {
         "owner": "nix-community",
         "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "jiradiff": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795799470,
+        "narHash": "sha256-zyy9WS+e66yq+oM931yvBgGE6yrK604Zeluf8Dy6T74=",
+        "owner": "thehumanworks",
+        "repo": "jiradiff",
+        "rev": "8612a69708a3b85109f601fb342040de2d387dd2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "thehumanworks",
+        "repo": "jiradiff",
         "type": "github"
       }
     },
@@ -129,17 +149,14 @@
     "nixpkgs": {
       "locked": {
         "lastModified": 1795371335,
-        "narHash": "sha256-oa2P5WZer1A4wuhatl92JyHHEjrrOdIyuvTuI5LUi9Q=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
+        "narHash": "sha256-3Xq+XlDu5l+UJ0cc+Jigs84+tz7Qu92NgXVHgJwC52M=",
         "rev": "619c39f6eac5d1ed6b8f073a9414baf7034b2356",
-        "type": "github"
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1126808.619c39f6eac5/nixexprs.tar.xz"
       },
       "original": {
-        "owner": "nixos",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
+        "type": "tarball",
+        "url": "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz"
       }
     },
     "root": {
@@ -148,6 +165,7 @@
         "capnshell": "capnshell",
         "doppler": "doppler",
         "home-manager": "home-manager",
+        "jiradiff": "jiradiff",
         "kbtd": "kbtd",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs",

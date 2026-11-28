@@ -7,6 +7,9 @@
 }:
 
 {
+  # switches off 'man home-configuration.nix'
+  manual.manpages.enable = false;
+
   imports = [
     inputs.wit.homeManagerModules.default
     inputs.capnshell.homeModules.default
@@ -24,12 +27,14 @@
     ./modules/doppler.nix
     ./modules/gh.nix
     ./modules/git.nix
+    ./modules/jiradiff.nix
     ./modules/neovim.nix
     ./modules/nh.nix
     ./modules/pi-coding-agent.nix
     ./modules/tmux.nix
     ./modules/twg.nix
     ./modules/utilities.nix
+    ./modules/wit.nix
   ];
 
   home = {
